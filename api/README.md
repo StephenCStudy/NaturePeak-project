@@ -3,17 +3,17 @@ RealEstatePro — API (Node, Express, MongoDB Atlas)
 
 Quick start (API only)
 
-1. Copy `.env.example` to `.env` and set `MONGO_URI` to your MongoDB Atlas connection string.
+1. 
 2. Install dependencies:
-
+    ```bash 
    npm install
 
 3. Start in development (uses ts-node + nodemon):
-
+    ```bash
    npm run dev
 
 4. Seed sample data into the database:
-
+    ```bash
    npm run seed
 
 What was added

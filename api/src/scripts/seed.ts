@@ -16,8 +16,8 @@ const seed = async () => {
 
   console.log("Creating sample agents...");
   const agents = await Agent.create([
-    { name: "Alice Nguyen", email: "alice@example.com", phone: "+84900123456", agency: "Dream Homes" },
-    { name: "Tran Binh", email: "tran@example.com", phone: "+84900123457", agency: "Prime Realty" }
+    { name: "Nguyen Van A", email: "nva@example.com", phone: "0987654321", agency: "Dream Homes" },
+    { name: "Tran Thi B", email: "tvb@example.com", phone: "0123456789", agency: "Prime Realty" }
   ]);
 
   console.log("Creating sample users...");
