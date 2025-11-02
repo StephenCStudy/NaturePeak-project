@@ -1,29 +1,20 @@
-// Cấu hình (database, biến môi trường, ...)
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 
+dotenv.config();
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://ngduyquangnhat03_db_user:fiteL9eWQRffUw6r@cluster0-knaht.pscwnxt.mongodb.net/?appName=Cluster0-KNaht";
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
-
-async function run() {
+export default async function connectDB () {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+    const uri = process.env.MONGO_URI as string;
+    if (!uri) {
+      throw new Error("MONGO_URI is not defined in environment variables");
+    }
+    await mongoose.connect(uri);
+    console.log("MongoDB connected");
+  } catch (error) {
+    console.error("MongoDB connection failed:", (error as any).message);
+    process.exit(1);
   }
-}
-run().catch(console.dir);
+};
+
 
