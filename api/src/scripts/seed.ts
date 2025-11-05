@@ -9,23 +9,23 @@ dotenv.config();
 const seed = async () => {
   await connectDB();
 
-  console.log("Clearing existing data...");
+  // console.log("Clearing existing data...");
   await Agent.deleteMany({});
   await Property.deleteMany({});
   await User.deleteMany({});
 
-  console.log("Creating sample agents...");
+  // console.log("Creating sample agents...");
   const agents = await Agent.create([
     { name: "Nguyen Van A", email: "nva@example.com", phone: "0987654321", agency: "Dream Homes" },
     { name: "Tran Thi B", email: "tvb@example.com", phone: "0123456789", agency: "Prime Realty" }
   ]);
 
-  console.log("Creating sample users...");
+  // console.log("Creating sample users...");
   const users = await User.create([
     { name: "Demo User", email: "demo@example.com", password: "password123" }
   ]);
 
-  console.log("Creating sample properties...");
+  // console.log("Creating sample properties...");
   await Property.create([
     {
       title: "Căn hộ cao cấp gần trung tâm",
