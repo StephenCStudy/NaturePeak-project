@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#C8E6C9" />
+  <g fill="#2E7D32" opacity="0.15">
+    <rect x="60" y="160" width="1080" height="480" rx="20" />
+  </g>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Poppins, sans-serif" font-size="36" fill="#083344">Sample property image</text>
+</svg>
