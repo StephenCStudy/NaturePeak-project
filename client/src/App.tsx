@@ -15,6 +15,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EditPostPage from "./pages/EditPostPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import SupportPage from "./pages/SupportPage";
 
 const App: React.FC = () => {
   return (
@@ -31,6 +34,9 @@ const App: React.FC = () => {
           <Route path="/properties/:id" element={<PostDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route
             path="/add-post"
             element={

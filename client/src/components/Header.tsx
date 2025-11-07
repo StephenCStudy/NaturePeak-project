@@ -1,8 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { HiOutlineHome, HiOutlineSparkles } from "react-icons/hi";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
 
 const Header: React.FC = () => {
+  const role = useSelector((s: RootState) => s.auth.role);
   return (
     <header className="sticky top-0 z-40 bg-(--color-cream) backdrop-blur-sm shadow-sm">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -29,17 +32,23 @@ const Header: React.FC = () => {
           <Link to="/posts" className="hover:underline">
             Tin rao
           </Link>
-          <Link to="/admin" className="hover:underline">
-            Dành cho môi giới
-          </Link>
-          <Link to="/contact" className="hover:underline">
-            Liên hệ
-          </Link>
+          {role === "admin" && (
+            <Link
+              to="/admin"
+              className="px-3 py-2 text-sm font-medium text-[#134e4a] border border-gray-200 rounded-lg hidden sm:inline"
+            >
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
           <Link to="/login" className="text-sm text-muted hidden sm:inline">
             Đăng nhập
+          </Link>
+          <span className="hidden sm:inline text-muted">/</span>
+          <Link to="/register" className="text-sm text-muted hidden sm:inline">
+            Đăng ký
           </Link>
 
           <Link
@@ -56,4 +65,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+// import { useNavigate } from "react-router-dom"; // Reserved for future
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
   HiHome,
@@ -57,6 +58,7 @@ interface Stats {
 }
 
 const AdminPage: React.FC = () => {
+  // const navigate = useNavigate(); // Reserved for future use
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "properties" | "users"
   >("dashboard");
@@ -328,7 +330,13 @@ const AdminPage: React.FC = () => {
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-2xl shadow-soft p-6">
+              <button
+                onClick={() => {
+                  setActiveTab("properties");
+                  setFilter("all");
+                }}
+                className="bg-white rounded-2xl shadow-soft p-6 text-left hover:shadow-lg transition-all cursor-pointer"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-(--color-pastel) rounded-xl">
                     <HiHome className="w-6 h-6 text-(--color-primary)" />
@@ -341,9 +349,15 @@ const AdminPage: React.FC = () => {
                   Tổng tin đăng
                 </h3>
                 <p className="text-sm text-muted">Tất cả bất động sản</p>
-              </div>
+              </button>
 
-              <div className="bg-white rounded-2xl shadow-soft p-6">
+              <button
+                onClick={() => {
+                  setActiveTab("properties");
+                  setFilter("pending");
+                }}
+                className="bg-white rounded-2xl shadow-soft p-6 text-left hover:shadow-lg transition-all cursor-pointer"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-yellow-100 rounded-xl">
                     <HiClock className="w-6 h-6 text-yellow-600" />
@@ -354,9 +368,12 @@ const AdminPage: React.FC = () => {
                 </div>
                 <h3 className="font-semibold text-[#083344] mb-1">Chờ duyệt</h3>
                 <p className="text-sm text-muted">Cần xem xét</p>
-              </div>
+              </button>
 
-              <div className="bg-white rounded-2xl shadow-soft p-6">
+              <button
+                onClick={() => setActiveTab("users")}
+                className="bg-white rounded-2xl shadow-soft p-6 text-left hover:shadow-lg transition-all cursor-pointer"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-green-100 rounded-xl">
                     <HiUsers className="w-6 h-6 text-green-600" />
@@ -369,9 +386,15 @@ const AdminPage: React.FC = () => {
                   Người dùng hoạt động
                 </h3>
                 <p className="text-sm text-muted">Tài khoản đang active</p>
-              </div>
+              </button>
 
-              <div className="bg-white rounded-2xl shadow-soft p-6">
+              <button
+                onClick={() => {
+                  setActiveTab("properties");
+                  setFilter("approved");
+                }}
+                className="bg-white rounded-2xl shadow-soft p-6 text-left hover:shadow-lg transition-all cursor-pointer"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-blue-100 rounded-xl">
                     <HiEye className="w-6 h-6 text-blue-600" />
@@ -384,7 +407,7 @@ const AdminPage: React.FC = () => {
                   Tổng lượt xem
                 </h3>
                 <p className="text-sm text-muted">Tất cả tin đăng</p>
-              </div>
+              </button>
             </div>
 
             {/* Charts */}
@@ -393,34 +416,50 @@ const AdminPage: React.FC = () => {
                 <h3 className="text-xl font-heading font-semibold text-[#083344] mb-6">
                   Thống kê theo khu vực
                 </h3>
-                <div className="space-y-4">
-                  {stats?.locationStats.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-muted">{item.location}</span>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-(--color-primary) h-2 rounded-full"
-                            style={{
-                              width: `${
-                                (item.count /
-                                  Math.max(
-                                    ...stats.locationStats.map((s) => s.count)
-                                  )) *
-                                100
-                              }%`,
-                            }}
-                          ></div>
+                <div className="space-y-5">
+                  {stats?.locationStats.map((item, index) => {
+                    const maxCount = Math.max(
+                      ...stats.locationStats.map((s) => s.count)
+                    );
+                    const percentage = (item.count / maxCount) * 100;
+                    const colors = [
+                      "bg-blue-500",
+                      "bg-green-500",
+                      "bg-yellow-500",
+                      "bg-purple-500",
+                      "bg-pink-500",
+                      "bg-indigo-500",
+                    ];
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-[#083344]">
+                            {item.location}
+                          </span>
+                          <span className="font-bold text-(--color-primary)">
+                            {item.count} tin
+                          </span>
                         </div>
-                        <span className="font-semibold text-[#083344] w-8 text-right">
-                          {item.count}
-                        </span>
+                        <div className="relative w-full bg-gray-100 rounded-full h-8 overflow-hidden shadow-inner">
+                          <div
+                            className={`${
+                              colors[index % colors.length]
+                            } h-full rounded-full transition-all duration-700 flex items-center justify-end pr-3`}
+                            style={{ width: `${percentage}%` }}
+                          >
+                            <span className="text-xs font-semibold text-white drop-shadow">
+                              {percentage.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-muted italic">
+                    📊 Biểu đồ phân bố tin đăng theo từng khu vực
+                  </p>
                 </div>
               </div>
 
@@ -759,4 +798,3 @@ const AdminPage: React.FC = () => {
 };
 
 export default AdminPage;
-

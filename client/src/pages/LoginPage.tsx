@@ -4,6 +4,8 @@ import { useUser } from "../context/UserContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { HiMail, HiLockClosed, HiEye, HiEyeOff } from "react-icons/hi";
 import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../store/authSlice";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +16,7 @@ const LoginPage: React.FC = () => {
 
   const { signIn } = useUser();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -45,7 +48,18 @@ const LoginPage: React.FC = () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Mock successful login
-      await signIn("mock-token");
+      const user = await signIn("mock-token");
+      const role =
+        email.trim().toLowerCase() === "admin@test.com"
+          ? "admin"
+          : user?.role ?? "user";
+      dispatch(
+        setCredentials({
+          user: { ...user, email, role },
+          token: localStorage.getItem("token") || "mock-token",
+          role,
+        })
+      );
       toast.success("Đăng nhập thành công!");
       navigate("/");
     } catch (error) {
@@ -247,4 +261,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-

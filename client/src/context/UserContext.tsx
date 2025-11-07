@@ -91,6 +91,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // Also clear sessionStorage for Redux auth
+    sessionStorage.removeItem("auth_token");
+    sessionStorage.removeItem("auth_role");
   };
 
   return (

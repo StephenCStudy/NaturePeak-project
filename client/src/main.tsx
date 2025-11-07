@@ -6,12 +6,17 @@ import "./theme.css";
 import App from "./App";
 import { UserProvider } from "./context/UserContext";
 
+import { Provider } from "react-redux";
+import { store } from "./store";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <UserProvider>
-        <App />
-      </UserProvider>
+      <Provider store={store}>
+        <UserProvider>
+          <App />
+        </UserProvider>
+      </Provider>
     </BrowserRouter>
   </StrictMode>
 );
