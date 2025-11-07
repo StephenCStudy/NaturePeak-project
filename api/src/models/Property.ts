@@ -10,7 +10,10 @@ const propertySchema = new mongoose.Schema({
   bathrooms: { type: Number },
   area: { type: Number },
   agent: { type: mongoose.Schema.Types.ObjectId, ref: "Agent" },
-  createdAt: { type: Date, default: Date.now }
+  // optional owner reference (User)
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  status: { type: String, enum: ["active", "hidden"], default: "active" },
+  createdAt: { type: Date, default: Date.now },
 });
 
 export default mongoose.model("Property", propertySchema);
