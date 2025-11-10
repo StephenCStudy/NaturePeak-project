@@ -8,7 +8,7 @@ const TermsPage: React.FC = () => {
           Điều khoản sử dụng
         </h1>
         <p className="text-[#134e4a] mb-6">
-          Bằng việc sử dụng RealEstatePro, bạn đồng ý tuân thủ các điều khoản và
+          Bằng việc sử dụng NaturePeak, bạn đồng ý tuân thủ các điều khoản và
           quy định sau đây nhằm đảm bảo trải nghiệm an toàn và minh bạch cho tất
           cả người dùng.
         </p>
@@ -45,11 +45,11 @@ const TermsPage: React.FC = () => {
             Quy trình giao dịch
           </h2>
           <p>
-            RealEstatePro là nền tảng kết nối người mua, người bán và môi giới.
-            Mọi giao dịch thực tế (thương lượng, ký hợp đồng, thanh toán, sang
-            tên) được thực hiện trực tiếp giữa các bên. Chúng tôi khuyến nghị
-            người dùng xác minh giấy tờ pháp lý, kiểm tra hiện trạng và ưu tiên
-            ký hợp đồng bằng văn bản khi giao dịch lớn.
+            NaturePeak là nền tảng kết nối người mua, người bán và môi giới. Mọi
+            giao dịch thực tế (thương lượng, ký hợp đồng, thanh toán, sang tên)
+            được thực hiện trực tiếp giữa các bên. Chúng tôi khuyến nghị người
+            dùng xác minh giấy tờ pháp lý, kiểm tra hiện trạng và ưu tiên ký hợp
+            đồng bằng văn bản khi giao dịch lớn.
           </p>
 
           <h2 className="text-2xl font-semibold text-[#083344]">
@@ -57,9 +57,8 @@ const TermsPage: React.FC = () => {
           </h2>
           <p>
             Các điều khoản phí và hoa hồng (nếu có) do bên bán và môi giới thống
-            nhất. RealEstatePro không trực tiếp can thiệp vào khoản thanh toán
-            giữa các bên, trừ khi có dịch vụ xử lý giao dịch được thỏa thuận
-            riêng.
+            nhất. NaturePeak không trực tiếp can thiệp vào khoản thanh toán giữa
+            các bên, trừ khi có dịch vụ xử lý giao dịch được thỏa thuận riêng.
           </p>
 
           <h2 className="text-2xl font-semibold text-[#083344]">

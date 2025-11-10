@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HiOutlineHome, HiOutlineSparkles } from "react-icons/hi";
+import { FaUser } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../store";
 import { signOut as signOutAction } from "../store/authSlice";
@@ -22,10 +23,10 @@ const Header: React.FC = () => {
             </div>
             <div>
               <div className="text-lg font-heading text-[#083344]">
-                RealEstatePro
+                NaturePeak
               </div>
               <div className="text-xs text-muted hidden sm:block">
-                Tự nhiên — Đất đai, vùng ven
+                An cư giữa thiên nhiên – đón nhịp sống an lành nơi vùng ven
               </div>
             </div>
           </Link>
@@ -51,20 +52,25 @@ const Header: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* If user is authenticated (token present), show Đăng xuất, otherwise show Đăng nhập / Đăng ký */}
           {token ? (
-            <button
-              onClick={async () => {
-                try {
-                  // Clear both redux and context/session storage
-                  dispatch(signOutAction());
-                  signOutContext();
-                } finally {
-                  navigate("/");
-                }
-              }}
-              className="text-sm text-muted hidden sm:inline"
-            >
-              Đăng xuất
-            </button>
+            <>
+              <Link to="/profile" className="text-(--color-primary) mr-2">
+                <FaUser size={18} />
+              </Link>
+              <button
+                onClick={async () => {
+                  try {
+                    // Clear both redux and context/session storage
+                    dispatch(signOutAction());
+                    signOutContext();
+                  } finally {
+                    navigate("/");
+                  }
+                }}
+                className="text-sm text-muted hidden sm:inline"
+              >
+                Đăng xuất
+              </button>
+            </>
           ) : (
             <>
               <Link to="/login" className="text-sm text-muted hidden sm:inline">

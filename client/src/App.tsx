@@ -19,6 +19,9 @@ import EditPostPage from "./pages/EditPostPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import SupportPage from "./pages/SupportPage";
+import ProfilePage from "./pages/ProfilePage";
+import EditProfilePage from "./pages/EditProfilePage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 const App: React.FC = () => {
   return (
@@ -44,6 +47,30 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <AddPostPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
               </ProtectedRoute>
             }
           />

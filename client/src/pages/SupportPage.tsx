@@ -9,7 +9,7 @@ const SupportPage: React.FC = () => {
         </h1>
         <p className="text-[#134e4a] mb-6">
           Cần hỗ trợ? Hãy liên hệ với chúng tôi qua các kênh dưới đây. Đội ngũ
-          RealEstatePro luôn sẵn sàng.
+          NaturePeak luôn sẵn sàng.
         </p>
         <div className="space-y-2 text-[#134e4a]">
           <p>

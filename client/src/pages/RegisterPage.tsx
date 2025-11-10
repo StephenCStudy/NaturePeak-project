@@ -118,7 +118,7 @@ const RegisterPage: React.FC = () => {
               Đăng ký tài khoản
             </h2>
             <p className="text-muted mt-2">
-              Tham gia cộng đồng bất động sản RealEstatePro
+              Tham gia cộng đồng bất động sản NaturePeak
             </p>
           </div>
 
@@ -307,7 +307,7 @@ const RegisterPage: React.FC = () => {
                   >
                     Chính sách bảo mật
                   </Link>{" "}
-                  của RealEstatePro
+                  của NaturePeak
                 </span>
               </label>
               {errors.terms && (
@@ -355,4 +355,3 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
-

@@ -1,6 +1,6 @@
-# RealEstatePro
+# NaturePeak
 
-RealEstatePro is a sample full-stack real estate listing application built with React + TypeScript on the frontend and Node + Express + MongoDB on the backend.
+NaturePeak is a sample full-stack real estate listing application built with React + TypeScript on the frontend and Node + Express + MongoDB on the backend.
 
 ## Technology
 
@@ -61,6 +61,6 @@ If you have a seed script, run it (for example `npm run seed` in the backend) to
 - Images in the simple demo are handled as base64 strings for quick prototyping. For production, consider using multipart uploads with cloud storage.
 - The frontend uses an in-app `UserContext` to store the JWT token in localStorage; you may want to switch to httpOnly cookies for improved security.
 
-Enjoy exploring RealEstatePro!
+Enjoy exploring NaturePeak!
 
 # Real Estate Pro Application

@@ -1,22 +1,29 @@
-RealEstatePro — API (Node, Express, MongoDB Atlas)
-===============================================
+# NaturePeak — API (Node, Express, MongoDB Atlas)
 
 Quick start (API only)
 
-1. 
+1.
 2. Install dependencies:
-    ```bash 
+
+   ```bash
    npm install
 
+   ```
+
 3. Start in development (uses ts-node + nodemon):
-    ```bash
+
+   ```bash
    npm run dev
 
+   ```
+
 4. Seed sample data into the database:
-    ```bash
+   ```bash
    npm run seed
+   ```
 
 What was added
+
 - Mongoose-based `src/config/db.ts` (reads `MONGO_URI`)
 - Express app in `app.ts` and server entrypoint `src/server.ts`
 - Models: `User`, `Agent`, `Property` (in `src/models`)

@@ -94,7 +94,7 @@ const LoginPage: React.FC = () => {
               Đăng nhập
             </h2>
             <p className="text-muted mt-2">
-              Chào mừng bạn trở lại với RealEstatePro
+              Chào mừng bạn trở lại với NaturePeak
             </p>
           </div>
 
