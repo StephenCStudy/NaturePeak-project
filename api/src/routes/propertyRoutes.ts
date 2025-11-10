@@ -1,25 +1,18 @@
 import express from "express";
-import {
-  getProperties,
-  getProperty,
-  createProperty,
-  updateProperty,
-  deleteProperty,
-  patchStatus,
-} from "../controllers/property.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticate } from "../middlewares/auth.middleware.js";
+import { controllers } from "../controllers/index.js";
 
 const router = express.Router();
 
-router.get("/", getProperties);
-router.get("/:id", getProperty);
+router.get("/", controllers.PropertyController.getProperties);
+router.get("/:id", controllers.PropertyController.getProperty);
 
 // protected routes
-router.post("/", authenticate, createProperty);
-router.put("/:id", authenticate, updateProperty);
-router.delete("/:id", authenticate, deleteProperty);
+router.post("/", authenticate, controllers.PropertyController.createProperty);
+router.put("/:id", authenticate, controllers.PropertyController.updateProperty);
+router.delete("/:id", authenticate, controllers.PropertyController.deleteProperty);
 
 // toggle status (hide/show)
-router.patch("/:id/status", authenticate, patchStatus);
+router.patch("/:id/status", authenticate, controllers.PropertyController.patchStatus);
 
 export default router;
