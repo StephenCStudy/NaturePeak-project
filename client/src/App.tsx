@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import HomePage from "./pages/HomePage";
 import ListingPage from "./pages/ListingPage";
 import PostDetailPage from "./pages/PostDetailPage";
@@ -18,12 +19,16 @@ import EditPostPage from "./pages/EditPostPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import SupportPage from "./pages/SupportPage";
+import ProfilePage from "./pages/ProfilePage";
+import EditProfilePage from "./pages/EditProfilePage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
       <Header />
       <Navbar />
+      <ScrollToTop />
 
       <main className="flex-1">
         <Routes>
@@ -42,6 +47,30 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <AddPostPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
               </ProtectedRoute>
             }
           />

@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
     <footer className="mt-12 bg-(--color-cream) text-gray-800">
       <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
-          <h4 className="font-heading text-xl text-[#083344]">RealEstatePro</h4>
+          <h4 className="font-heading text-xl text-[#083344]">NaturePeak</h4>
           <p className="text-sm text-muted mt-2">
             Sàn giao dịch bất động sản vùng ven — Thân thiện, tin cậy, minh
             bạch.
@@ -94,7 +94,7 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="border-t-2 border-(--color-pastel) py-3 text-center text-sm text-[#134e4a] bg-white/40">
-        © {new Date().getFullYear()} RealEstatePro — All rights reserved.
+        © {new Date().getFullYear()} NaturePeak — All rights reserved.
       </div>
     </footer>
   );
