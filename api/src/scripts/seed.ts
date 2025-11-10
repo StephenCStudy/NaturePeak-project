@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
-import connectDB from "../config/db";
-import Agent from "../models/Agent";
-import Property from "../models/Property";
-import User from "../models/User";
+import connectDB from "../config/db.js";
+import Agent from "../models/Agent.js";
+import Property from "../models/Property.js";
+import User from "../models/User.js";
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ const seed = async () => {
 
   // console.log("Creating sample users...");
   const users = await User.create([
-    { name: "Demo User", email: "demo@example.com", password: "password123" }
+    { name: "Demo User", email: "abc@gmail.com", password: "1234567890" }
   ]);
 
   // console.log("Creating sample properties...");
@@ -35,7 +35,7 @@ const seed = async () => {
       bedrooms: 2,
       bathrooms: 2,
       area: 85,
-      agent: agents[0]._id,
+      agent: agents[0]?._id,
     },
     {
       title: "Nhà phố sang trọng",
@@ -45,7 +45,7 @@ const seed = async () => {
       bedrooms: 4,
       bathrooms: 3,
       area: 220,
-      agent: agents[1]._id,
+      agent: agents[1]?._id,
     }
   ]);
 
