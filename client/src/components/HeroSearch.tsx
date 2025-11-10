@@ -60,7 +60,7 @@ const HeroSearch: React.FC<{ onSearch?: (q: any) => void }> = ({
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Nhập tên khu vực, loại nhà, mức giá..."
-                    className="w-full outline-none text-sm font-medium placeholder-gray-400"
+                    className="flex-1 w-full outline-none text-sm font-medium placeholder-gray-400 bg-transparent transition-colors"
                     aria-label="Tìm theo địa điểm, loại nhà, giá"
                   />
                 </div>
@@ -119,4 +119,3 @@ const HeroSearch: React.FC<{ onSearch?: (q: any) => void }> = ({
 };
 
 export default HeroSearch;
-

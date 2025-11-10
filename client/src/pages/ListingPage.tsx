@@ -393,12 +393,12 @@ const ListingPage: React.FC = () => {
           </div>
 
           {/* Advanced Filters */}
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+        {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-200">
               <select
                 value={filters.type}
                 onChange={(e) => handleFilterChange("type", e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Loại giao dịch</option>
                 <option value="sale">Bán</option>
@@ -410,7 +410,7 @@ const ListingPage: React.FC = () => {
                 onChange={(e) =>
                   handleFilterChange("propertyType", e.target.value)
                 }
-                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Loại hình</option>
                 <option value="house">Nhà ở</option>
@@ -424,55 +424,13 @@ const ListingPage: React.FC = () => {
                 placeholder="Khu vực"
                 value={filters.location}
                 onChange={(e) => handleFilterChange("location", e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               />
-
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Giá từ"
-                  value={filters.minPrice}
-                  onChange={(e) =>
-                    handleFilterChange("minPrice", e.target.value)
-                  }
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                />
-                <input
-                  type="number"
-                  placeholder="Giá đến"
-                  value={filters.maxPrice}
-                  onChange={(e) =>
-                    handleFilterChange("maxPrice", e.target.value)
-                  }
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="DT từ (m²)"
-                  value={filters.minArea}
-                  onChange={(e) =>
-                    handleFilterChange("minArea", e.target.value)
-                  }
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                />
-                <input
-                  type="number"
-                  placeholder="DT đến (m²)"
-                  value={filters.maxArea}
-                  onChange={(e) =>
-                    handleFilterChange("maxArea", e.target.value)
-                  }
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                />
-              </div>
 
               <select
                 value={filters.bedrooms}
                 onChange={(e) => handleFilterChange("bedrooms", e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Số phòng ngủ</option>
                 <option value="1">1 phòng</option>
@@ -481,10 +439,52 @@ const ListingPage: React.FC = () => {
                 <option value="4">4+ phòng</option>
               </select>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex gap-2 items-stretch">
+                <input
+                  type="number"
+                  placeholder="Giá từ"
+                  value={filters.minPrice}
+                  onChange={(e) =>
+                    handleFilterChange("minPrice", e.target.value)
+                  }
+                  className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
+                />
+                <input
+                  type="number"
+                  placeholder="Giá đến"
+                  value={filters.maxPrice}
+                  onChange={(e) =>
+                    handleFilterChange("maxPrice", e.target.value)
+                  }
+                  className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
+                />
+              </div>
+
+              <div className="flex gap-2 items-stretch" style={{marginLeft:"75px"}}>
+                <input
+                  type="number"
+                  placeholder="DT từ (m²)"
+                  value={filters.minArea}
+                  onChange={(e) =>
+                    handleFilterChange("minArea", e.target.value)
+                  }
+                  className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
+                />
+                <input
+                  type="number"
+                  placeholder="DT đến (m²)"
+                  value={filters.maxArea}
+                  onChange={(e) =>
+                    handleFilterChange("maxArea", e.target.value)
+                  }
+                  className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
+                />
+              </div>
+
+              <div className="lg:col-span-2 flex items-center justify-end">
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-2 text-muted hover:text-(--color-primary) transition-colors"
+                  className="px-6 h-10 rounded-lg border border-gray-200 text-sm bg-white hover:bg-gray-50 hover:border-blue-500 transition-colors"
                 >
                   Xóa bộ lọc
                 </button>
@@ -680,4 +680,3 @@ const ListingPage: React.FC = () => {
 };
 
 export default ListingPage;
-

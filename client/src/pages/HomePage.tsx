@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import HeroSearch from "../components/HeroSearch";
 import PropertyCard from "../components/PropertyCard";
@@ -203,7 +204,10 @@ const HomePage: React.FC = () => {
             Đăng tin miễn phí và tiếp cận hàng nghìn khách hàng tiềm năng trên
             nền tảng của chúng tôi
           </p>
-          <button className="btn-accent inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <Link
+            to="/add-post"
+            className="btn-accent inline-flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+          >
             <svg
               className="w-5 h-5"
               fill="none"
@@ -218,7 +222,7 @@ const HomePage: React.FC = () => {
               />
             </svg>
             Đăng tin ngay
-          </button>
+          </Link>
         </section>
       </div>
     </div>
@@ -226,4 +230,3 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
-
