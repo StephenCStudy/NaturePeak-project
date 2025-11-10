@@ -19,6 +19,50 @@ const PrivacyPage: React.FC = () => {
             Cho phép người dùng yêu cầu chỉnh sửa hoặc xoá dữ liệu cá nhân.
           </li>
         </ul>
+        <div className="mt-8 space-y-6 text-[#134e4a]">
+          <h2 className="text-2xl font-semibold text-[#083344]">
+            Dữ liệu chúng tôi thu thập
+          </h2>
+          <ul className="list-decimal pl-6 space-y-2">
+            <li>Thông tin cá nhân: tên, email, điện thoại, địa chỉ liên hệ.</li>
+            <li>
+              Thông tin bất động sản: mô tả, ảnh, vị trí, giá, diện tích, giấy
+              tờ liên quan.
+            </li>
+            <li>
+              Dữ liệu giao dịch: lịch sử liên hệ, thoả thuận, thông tin thanh
+              toán nếu phát sinh.
+            </li>
+          </ul>
+
+          <h2 className="text-2xl font-semibold text-[#083344]">
+            Mục đích sử dụng
+          </h2>
+          <p>
+            Chúng tôi sử dụng dữ liệu để: kết nối người mua và người bán, hiển
+            thị và quản lý tin đăng, hỗ trợ giao dịch, gửi thông báo liên quan
+            đến giao dịch và cải thiện trải nghiệm người dùng (gợi ý, thống kê).
+          </p>
+
+          <h2 className="text-2xl font-semibold text-[#083344]">
+            Chia sẻ với bên thứ ba
+          </h2>
+          <p>
+            Dữ liệu có thể được chia sẻ với các bên cung cấp dịch vụ hỗ trợ giao
+            dịch (ví dụ: môi giới, bên xử lý thanh toán, dịch vụ định giá) hoặc
+            khi có yêu cầu pháp lý hợp lệ. Chúng tôi yêu cầu các bên này bảo vệ
+            dữ liệu theo tiêu chuẩn tương đương.
+          </p>
+
+          <h2 className="text-2xl font-semibold text-[#083344]">
+            Quyền của người dùng
+          </h2>
+          <p>
+            Người dùng có quyền truy cập, sửa đổi, yêu cầu xóa hoặc hạn chế xử
+            lý dữ liệu cá nhân. Để thực hiện quyền này, vui lòng liên hệ bộ phận
+            hỗ trợ.
+          </p>
+        </div>
       </div>
     </div>
   );

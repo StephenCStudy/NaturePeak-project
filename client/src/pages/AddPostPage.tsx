@@ -19,6 +19,14 @@ const AddPostPage: React.FC = () => {
   const [area, setArea] = useState("");
   const [location, setLocation] = useState("");
   const [type, setType] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [negotiable, setNegotiable] = useState(false);
+  const [legalStatus, setLegalStatus] = useState("");
+  const [address, setAddress] = useState("");
+  const [amenities, setAmenities] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +42,7 @@ const AddPostPage: React.FC = () => {
       const objectUrls = arr.map((f) => URL.createObjectURL(f));
       setPreviewUrls((s) => [...s, ...objectUrls]);
     } catch (err) {
-      toast.error("Failed to read files");
+      toast.error("Không thể đọc file ảnh");
     }
   };
 
@@ -57,6 +65,14 @@ const AddPostPage: React.FC = () => {
         location,
         type,
         images,
+        bedrooms: bedrooms ? Number(bedrooms) : undefined,
+        bathrooms: bathrooms ? Number(bathrooms) : undefined,
+        address: address || undefined,
+        legalStatus: legalStatus || undefined,
+        amenities: amenities || undefined,
+        contactName: contactName || undefined,
+        contactPhone: contactPhone || undefined,
+        negotiable: negotiable || false,
       };
 
       const token = localStorage.getItem("token");
@@ -64,11 +80,11 @@ const AddPostPage: React.FC = () => {
       if (token) headers.Authorization = `Bearer ${token}`;
 
       await axios.post("/api/posts", payload, { headers });
-      toast.success("Post created successfully");
+      toast.success("Đăng tin thành công");
       setTimeout(() => navigate("/myposts"), 800);
     } catch (err: any) {
       toast.error(
-        err?.response?.data?.message || err.message || "Failed to create post"
+        err?.response?.data?.message || err.message || "Đăng tin thất bại"
       );
     } finally {
       setLoading(false);
@@ -83,10 +99,10 @@ const AddPostPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8 text-center">
           <h2 className="text-5xl font-heading font-bold text-[#083344] mb-3">
-            Create New Listing
+            Đăng tin mới
           </h2>
           <p className="text-lg text-(--text-muted)">
-            Share your property with potential buyers or renters
+            Đăng tin miễn phí - Tiếp cận người mua và người thuê tiềm năng
           </p>
         </div>
 
@@ -98,10 +114,10 @@ const AddPostPage: React.FC = () => {
             {/* Title */}
             <div>
               <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                Property Title *
+                Tiêu đề tin đăng *
               </label>
               <input
-                placeholder="Beautiful 2BR apartment in district X"
+                placeholder="Ví dụ: Nhà 2 tầng, 3PN, gần chợ X"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -112,13 +128,13 @@ const AddPostPage: React.FC = () => {
             {/* Description */}
             <div>
               <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                Description
+                Mô tả chi tiết
               </label>
               <textarea
-                placeholder="Describe the property, amenities, nearby transport..."
+                placeholder="Mô tả chi tiết về căn nhà: diện tích, hướng, nội thất, tiện ích xung quanh, đường vào..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={5}
+                rows={6}
                 className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-4 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none resize-none hover:border-(--color-primary)"
               />
             </div>
@@ -127,11 +143,11 @@ const AddPostPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                  💰 Price (VND)
+                  💰 Giá (VND)
                 </label>
                 <input
                   type="number"
-                  placeholder="e.g. 1500000000"
+                  placeholder="Ví dụ: 1500000000"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-4 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
@@ -139,11 +155,11 @@ const AddPostPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                  📐 Area (m²)
+                  📐 Diện tích (m²)
                 </label>
                 <input
                   type="number"
-                  placeholder="e.g. 75"
+                  placeholder="Ví dụ: 75"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-4 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
@@ -151,39 +167,104 @@ const AddPostPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Location and Type */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Location, Type, Bedrooms/Bathrooms */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                  📍 Location
+                  📍 Vị trí (quận, TP)
                 </label>
                 <input
-                  placeholder="District, City"
+                  placeholder="Ví dụ: Quận 1, TP.HCM"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-4 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
                 />
               </div>
               <div>
                 <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                  🏷️ Type
+                  🏷️ Loại giao dịch
                 </label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-4 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none bg-white hover:border-(--color-primary) cursor-pointer"
+                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none bg-white hover:border-(--color-primary) cursor-pointer"
                 >
-                  <option value="">Select type</option>
-                  <option value="rent">For Rent</option>
-                  <option value="sale">For Sale</option>
+                  <option value="">Chọn loại</option>
+                  <option value="rent">Cho thuê</option>
+                  <option value="sale">Bán</option>
                 </select>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                    Phòng ngủ
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Số phòng"
+                    value={bedrooms}
+                    onChange={(e) => setBedrooms(e.target.value)}
+                    className="w-full border-2 border-(--color-pastel) rounded-xl px-4 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                    Phòng tắm
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Số phòng"
+                    value={bathrooms}
+                    onChange={(e) => setBathrooms(e.target.value)}
+                    className="w-full border-2 border-(--color-pastel) rounded-xl px-4 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Address and Legal */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                  Địa chỉ chi tiết
+                </label>
+                <input
+                  placeholder="Số nhà, đường, phường/xã"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                />
+              </div>
+              <div>
+                <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                  Giấy tờ pháp lý
+                </label>
+                <input
+                  placeholder="Sổ đỏ / Sổ hồng / Hợp đồng..."
+                  value={legalStatus}
+                  onChange={(e) => setLegalStatus(e.target.value)}
+                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                />
+              </div>
+            </div>
+
+            {/* Amenities */}
+            <div>
+              <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                Tiện nghi (phân cách bằng dấu phẩy)
+              </label>
+              <input
+                placeholder="Ví dụ: sân vườn, gara, gần chợ, gần trường"
+                value={amenities}
+                onChange={(e) => setAmenities(e.target.value)}
+                className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+              />
             </div>
 
             {/* Images */}
             <div>
               <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
-                📷 Property Images
+                📷 Ảnh bất động sản
               </label>
               <div className="border-2 border-dashed border-(--color-pastel) rounded-xl p-8 text-center hover:border-(--color-primary) hover:bg-(--color-cream) transition-all">
                 <input
@@ -212,10 +293,10 @@ const AddPostPage: React.FC = () => {
                     />
                   </svg>
                   <span className="text-base text-[#083344] font-semibold">
-                    Click to upload images
+                    Nhấp để tải ảnh lên
                   </span>
                   <span className="text-sm text-(--text-muted) mt-2">
-                    PNG, JPG, GIF up to 10MB
+                    PNG, JPG, GIF, tối đa 10MB / ảnh
                   </span>
                 </label>
               </div>
@@ -241,6 +322,43 @@ const AddPostPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Contact */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                  Người liên hệ
+                </label>
+                <input
+                  placeholder="Họ và tên"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                />
+              </div>
+              <div>
+                <label className="block text-base font-semibold text-[#083344] mb-3 font-heading">
+                  Số điện thoại
+                </label>
+                <input
+                  placeholder="Ví dụ: 0901234567"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  className="w-full border-2 border-(--color-pastel) rounded-xl px-5 py-3 text-base focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-pastel) transition-all outline-none hover:border-(--color-primary)"
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 mt-6">
+                  <input
+                    type="checkbox"
+                    checked={negotiable}
+                    onChange={(e) => setNegotiable(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Giá có thể thương lượng</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Footer Actions */}
@@ -250,7 +368,7 @@ const AddPostPage: React.FC = () => {
               onClick={() => navigate("/posts")}
               className="btn-outline px-8 py-3 text-base"
             >
-              Cancel
+              Hủy
             </button>
             <button
               disabled={loading}
@@ -279,10 +397,10 @@ const AddPostPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating Listing...
+                  Đang đăng tin...
                 </span>
               ) : (
-                "Create Listing"
+                "Đăng tin"
               )}
             </button>
           </div>
@@ -293,4 +411,3 @@ const AddPostPage: React.FC = () => {
 };
 
 export default AddPostPage;
-

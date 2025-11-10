@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import HomePage from "./pages/HomePage";
 import ListingPage from "./pages/ListingPage";
 import PostDetailPage from "./pages/PostDetailPage";
@@ -24,6 +25,7 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
       <Header />
       <Navbar />
+      <ScrollToTop />
 
       <main className="flex-1">
         <Routes>
