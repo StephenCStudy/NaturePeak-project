@@ -1,0 +1,32 @@
+@import "tailwindcss/theme"layer(theme);
+@import "tailwindcss/preflight"layer(base);
+@import "tailwindcss/utilities"layer(utilities);
+
+@layer theme {
+
+    /* Custom theme variables for Natural Real Estate */
+    :root {
+        --color-primary: #2E7D32;
+        /* green */
+        --color-brown: #795548;
+        /* brown */
+        --color-cream: #F9FBE7;
+        /* cream */
+        --color-pastel: #C8E6C9;
+        /* pastel green */
+        --color-accent: #FFEB3B;
+        /* lemon */
+        --text-muted: #6B6B6B;
+
+        /* Custom colors for Tailwind */
+        --color-natural-green: #2E7D32;
+        --color-natural-brown: #795548;
+        --color-natural-cream: #F9FBE7;
+        --color-natural-pastel: #C8E6C9;
+        --color-natural-lemon: #FFEB3B;
+
+        /* Font families */
+        --font-heading: 'Poppins', 'Montserrat', sans-serif;
+        --font-body: 'Roboto', 'Open Sans', system-ui, sans-serif;
+    }
+}

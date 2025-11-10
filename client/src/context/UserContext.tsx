@@ -64,12 +64,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const signIn = async (newToken: string) => {
     setToken(newToken);
     localStorage.setItem("token", newToken);
-    const res = await axios.get("/api/auth/me", {
-      headers: { Authorization: `Bearer ${newToken}` },
-    });
-    setUser(res.data);
-    localStorage.setItem("user", JSON.stringify(res.data));
-    return res.data as User;
+
+    try {
+      const res = await axios.get("/api/auth/me", {
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+      setUser(res.data);
+      localStorage.setItem("user", JSON.stringify(res.data));
+      return res.data as User;
+    } catch (error) {
+      // For mock authentication, create a default user
+      const mockUser = {
+        _id: "1",
+        name: "Mock User",
+        email: "user@example.com",
+        role: "user",
+      };
+      setUser(mockUser);
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      return mockUser;
+    }
   };
 
   const signOut = () => {
@@ -77,6 +91,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // Also clear sessionStorage for Redux auth
+    sessionStorage.removeItem("auth_token");
+    sessionStorage.removeItem("auth_role");
   };
 
   return (

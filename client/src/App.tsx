@@ -9,9 +9,15 @@ import AddPostPage from "./pages/AddPostPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminPage from "./pages/AdminPage";
+import MyPostsPage from "./pages/MyPostsPage";
 import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import EditPostPage from "./pages/EditPostPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import SupportPage from "./pages/SupportPage";
 
 const App: React.FC = () => {
   return (
@@ -19,15 +25,50 @@ const App: React.FC = () => {
       <Header />
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/listings" element={<ListingPage />} />
           <Route path="/posts" element={<ListingPage />} />
           <Route path="/posts/:id" element={<PostDetailPage />} />
-          <Route path="/add-post" element={<AddPostPage />} />
+          <Route path="/properties/:id" element={<PostDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route
+            path="/add-post"
+            element={
+              <ProtectedRoute>
+                <AddPostPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-posts"
+            element={
+              <ProtectedRoute>
+                <MyPostsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-post/:id"
+            element={
+              <ProtectedRoute>
+                <EditPostPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
 

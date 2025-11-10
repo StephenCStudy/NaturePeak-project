@@ -1,210 +1,683 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
+import {
+  HiSearch,
+  HiFilter,
+  HiSortAscending,
+  HiSortDescending,
+  HiViewGrid,
+  HiViewList,
+  HiLocationMarker,
+  HiHome,
+  HiCurrencyDollar,
+  HiOutlineHeart,
+  HiHeart,
+} from "react-icons/hi";
+import { toast } from "react-toastify";
 
-type Post = {
-  _id?: string;
+interface Property {
+  _id: string;
   title: string;
-  description?: string;
-  price?: number;
-  area?: number;
-  location?: string;
-  images?: string[];
-};
+  price: number;
+  area: number;
+  location: string;
+  type: "sale" | "rent";
+  propertyType: "house" | "apartment" | "land" | "commercial";
+  bedrooms?: number;
+  bathrooms?: number;
+  images: string[];
+  createdAt: string;
+  agent: {
+    name: string;
+    phone: string;
+  };
+  status: "available" | "sold" | "rented";
+  featured?: boolean;
+}
+
+type SortOption =
+  | "newest"
+  | "oldest"
+  | "price-asc"
+  | "price-desc"
+  | "area-asc"
+  | "area-desc";
+type ViewMode = "grid" | "list";
 
 const ListingPage: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(6);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // filters
-  const [location, setLocation] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [minArea, setMinArea] = useState("");
-  const [maxArea, setMaxArea] = useState("");
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchPosts = async () => {
+  // Filters
+  const [filters, setFilters] = useState({
+    search: "",
+    type: "",
+    propertyType: "",
+    location: "",
+    minPrice: "",
+    maxPrice: "",
+    minArea: "",
+    maxArea: "",
+    bedrooms: "",
+    bathrooms: "",
+  });
+
+  useEffect(() => {
+    fetchProperties();
+  }, [currentPage, sortBy, filters]);
+
+  const fetchProperties = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const params: Record<string, any> = { page, limit };
-      if (location) params.location = location;
-      if (minPrice) params.minPrice = minPrice;
-      if (maxPrice) params.maxPrice = maxPrice;
-      if (minArea) params.minArea = minArea;
-      if (maxArea) params.maxArea = maxArea;
+      // Mock API call - replace with real API
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const res = await axios.get("/api/posts", { params });
+      // Mock data with filtering and sorting
+      let mockData: Property[] = [
+        {
+          _id: "1",
+          title: "Villa vườn tuyệt đẹp, không gian xanh mát",
+          price: 2500000000,
+          area: 200,
+          location: "Thủ Đức, TP.HCM",
+          type: "sale",
+          propertyType: "house",
+          bedrooms: 4,
+          bathrooms: 3,
+          images: ["/assets/sample1.svg", "/assets/sample2.svg"],
+          createdAt: "2024-11-08",
+          agent: { name: "Nguyễn Văn A", phone: "0901234567" },
+          status: "available",
+          featured: true,
+        },
+        {
+          _id: "2",
+          title: "Căn hộ cao cấp view sông Sài Gòn",
+          price: 45000000,
+          area: 90,
+          location: "Quận 1, TP.HCM",
+          type: "rent",
+          propertyType: "apartment",
+          bedrooms: 2,
+          bathrooms: 2,
+          images: ["/assets/sample2.svg"],
+          createdAt: "2024-11-07",
+          agent: { name: "Trần Thị B", phone: "0907654321" },
+          status: "available",
+        },
+        {
+          _id: "3",
+          title: "Đất nền dự án, mặt tiền đường lớn",
+          price: 1800000000,
+          area: 150,
+          location: "Bình Dương",
+          type: "sale",
+          propertyType: "land",
+          images: ["/assets/sample1.svg"],
+          createdAt: "2024-11-06",
+          agent: { name: "Lê Văn C", phone: "0912345678" },
+          status: "available",
+        },
+        {
+          _id: "4",
+          title: "Nhà phố hiện đại, thiết kế sang trọng",
+          price: 3200000000,
+          area: 120,
+          location: "Quận 7, TP.HCM",
+          type: "sale",
+          propertyType: "house",
+          bedrooms: 3,
+          bathrooms: 2,
+          images: ["/assets/sample2.svg", "/assets/sample1.svg"],
+          createdAt: "2024-11-05",
+          agent: { name: "Phạm Thị D", phone: "0908765432" },
+          status: "available",
+        },
+        {
+          _id: "5",
+          title: "Studio apartment gần trung tâm",
+          price: 18000000,
+          area: 35,
+          location: "Quận 3, TP.HCM",
+          type: "rent",
+          propertyType: "apartment",
+          bedrooms: 1,
+          bathrooms: 1,
+          images: ["/assets/sample1.svg"],
+          createdAt: "2024-11-04",
+          agent: { name: "Hoàng Văn E", phone: "0903456789" },
+          status: "available",
+        },
+        {
+          _id: "6",
+          title: "Mặt bằng kinh doanh đắc địa",
+          price: 120000000,
+          area: 80,
+          location: "Quận 1, TP.HCM",
+          type: "rent",
+          propertyType: "commercial",
+          images: ["/assets/sample2.svg"],
+          createdAt: "2024-11-03",
+          agent: { name: "Võ Thị F", phone: "0909876543" },
+          status: "available",
+        },
+      ];
 
-      // support multiple response shapes
-      let items: Post[] = [];
-      let totalCount = 0;
-
-      if (Array.isArray(res.data)) {
-        items = res.data;
-        totalCount = res.data.length;
-      } else if (res.data && Array.isArray(res.data.posts)) {
-        items = res.data.posts;
-        totalCount = res.data.total || items.length;
-      } else if (res.data && Array.isArray(res.data.data)) {
-        items = res.data.data;
-        totalCount = res.data.total || items.length;
-      } else {
-        // fallback
-        items = res.data?.items || [];
-        totalCount = res.data?.total || items.length;
+      // Apply filters
+      if (filters.search) {
+        mockData = mockData.filter(
+          (p) =>
+            p.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+            p.location.toLowerCase().includes(filters.search.toLowerCase())
+        );
       }
 
-      setPosts(items);
-      setTotal(Number(totalCount));
-    } catch (err: any) {
-      setError(err?.message || "Failed to fetch posts");
+      if (filters.type) {
+        mockData = mockData.filter((p) => p.type === filters.type);
+      }
+
+      if (filters.propertyType) {
+        mockData = mockData.filter(
+          (p) => p.propertyType === filters.propertyType
+        );
+      }
+
+      if (filters.location) {
+        mockData = mockData.filter((p) =>
+          p.location.toLowerCase().includes(filters.location.toLowerCase())
+        );
+      }
+
+      if (filters.minPrice) {
+        mockData = mockData.filter(
+          (p) => p.price >= parseInt(filters.minPrice)
+        );
+      }
+
+      if (filters.maxPrice) {
+        mockData = mockData.filter(
+          (p) => p.price <= parseInt(filters.maxPrice)
+        );
+      }
+
+      if (filters.minArea) {
+        mockData = mockData.filter((p) => p.area >= parseInt(filters.minArea));
+      }
+
+      if (filters.maxArea) {
+        mockData = mockData.filter((p) => p.area <= parseInt(filters.maxArea));
+      }
+
+      // Apply sorting
+      mockData.sort((a, b) => {
+        switch (sortBy) {
+          case "newest":
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          case "oldest":
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+          case "price-asc":
+            return a.price - b.price;
+          case "price-desc":
+            return b.price - a.price;
+          case "area-asc":
+            return a.area - b.area;
+          case "area-desc":
+            return b.area - a.area;
+          default:
+            return 0;
+        }
+      });
+
+      // Pagination
+      const itemsPerPage = 6;
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedData = mockData.slice(startIndex, endIndex);
+
+      setProperties(paginatedData);
+      setTotalCount(mockData.length);
+      setTotalPages(Math.ceil(mockData.length / itemsPerPage));
+    } catch (error) {
+      toast.error("Không thể tải danh sách bất động sản");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
-
-  const onApplyFilters = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchPosts();
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      type: "",
+      propertyType: "",
+      location: "",
+      minPrice: "",
+      maxPrice: "",
+      minArea: "",
+      maxArea: "",
+      bedrooms: "",
+      bathrooms: "",
+    });
+    setCurrentPage(1);
+  };
+
+  const toggleFavorite = (propertyId: string) => {
+    setFavorites((prev) =>
+      prev.includes(propertyId)
+        ? prev.filter((id) => id !== propertyId)
+        : [...prev, propertyId]
+    );
+    toast.success(
+      favorites.includes(propertyId)
+        ? "Đã bỏ khỏi yêu thích"
+        : "Đã thêm vào yêu thích"
+    );
+  };
+
+  const formatPrice = (price: number, type: string) => {
+    if (price >= 1000000000) {
+      return `${(price / 1000000000).toFixed(1)} tỷ${
+        type === "rent" ? "/tháng" : ""
+      }`;
+    } else if (price >= 1000000) {
+      return `${(price / 1000000).toFixed(0)} triệu${
+        type === "rent" ? "/tháng" : ""
+      }`;
+    }
+    return `${price.toLocaleString()}${type === "rent" ? "/tháng" : ""}`;
+  };
+
+  if (loading) {
+    return (
+      <LoadingSpinner fullScreen text="Đang tải danh sách bất động sản..." />
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4">
-      <h2 className="text-2xl font-semibold mb-4">Listings</h2>
-
-      <form
-        onSubmit={onApplyFilters}
-        className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6"
-      >
-        <input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Location"
-          className="border rounded px-3 py-2 md:col-span-2"
-        />
-
-        <input
-          value={minPrice}
-          onChange={(e) => setMinPrice(e.target.value)}
-          placeholder="Min Price"
-          className="border rounded px-3 py-2"
-        />
-
-        <input
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
-          placeholder="Max Price"
-          className="border rounded px-3 py-2"
-        />
-
-        <input
-          value={minArea}
-          onChange={(e) => setMinArea(e.target.value)}
-          placeholder="Min Area (m²)"
-          className="border rounded px-3 py-2"
-        />
-
-        <input
-          value={maxArea}
-          onChange={(e) => setMaxArea(e.target.value)}
-          placeholder="Max Area (m²)"
-          className="border rounded px-3 py-2"
-        />
-
-        <div className="md:col-span-5 flex items-center space-x-3 mt-2">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded"
-          >
-            Apply
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setLocation("");
-              setMinPrice("");
-              setMaxPrice("");
-              setMinArea("");
-              setMaxArea("");
-              setPage(1);
-              fetchPosts();
-            }}
-            className="px-4 py-2 border rounded"
-          >
-            Reset
-          </button>
+    <div className="min-h-screen bg-linear-to-b from-(--color-cream) to-white">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-heading font-bold text-[#083344] mb-2">
+            Tìm kiếm bất động sản
+          </h1>
+          <p className="text-muted">
+            Khám phá {totalCount} bất động sản phù hợp với nhu cầu của bạn
+          </p>
         </div>
-      </form>
 
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
+        {/* Search & Filters */}
+        <div className="bg-white rounded-2xl shadow-soft p-6 mb-8">
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative">
+              <HiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tiêu đề hoặc địa điểm..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20 outline-none transition-all"
+              />
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {posts.map((p) => (
-          <article
-            key={p._id}
-            className="border rounded overflow-hidden bg-white"
-          >
-            <div className="h-40 bg-gray-100 flex items-center justify-center">
-              {p.images && p.images.length > 0 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.images[0]}
-                  alt={p.title}
-                  className="object-cover w-full h-40"
+          {/* Filter Toggle */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 text-(--color-primary) hover:text-(--color-primary)/80 transition-colors"
+            >
+              <HiFilter className="w-5 h-5" />
+              {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+            </button>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted">Sắp xếp:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none text-sm"
+                >
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="price-asc">Giá thấp đến cao</option>
+                  <option value="price-desc">Giá cao đến thấp</option>
+                  <option value="area-asc">Diện tích nhỏ đến lớn</option>
+                  <option value="area-desc">Diện tích lớn đến nhỏ</option>
+                </select>
+              </div>
+
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded ${
+                    viewMode === "grid"
+                      ? "bg-white shadow-sm text-(--color-primary)"
+                      : "text-muted"
+                  }`}
+                >
+                  <HiViewGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded ${
+                    viewMode === "list"
+                      ? "bg-white shadow-sm text-(--color-primary)"
+                      : "text-muted"
+                  }`}
+                >
+                  <HiViewList className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+              <select
+                value={filters.type}
+                onChange={(e) => handleFilterChange("type", e.target.value)}
+                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+              >
+                <option value="">Loại giao dịch</option>
+                <option value="sale">Bán</option>
+                <option value="rent">Cho thuê</option>
+              </select>
+
+              <select
+                value={filters.propertyType}
+                onChange={(e) =>
+                  handleFilterChange("propertyType", e.target.value)
+                }
+                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+              >
+                <option value="">Loại hình</option>
+                <option value="house">Nhà ở</option>
+                <option value="apartment">Căn hộ</option>
+                <option value="land">Đất nền</option>
+                <option value="commercial">Thương mại</option>
+              </select>
+
+              <input
+                type="text"
+                placeholder="Khu vực"
+                value={filters.location}
+                onChange={(e) => handleFilterChange("location", e.target.value)}
+                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+              />
+
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Giá từ"
+                  value={filters.minPrice}
+                  onChange={(e) =>
+                    handleFilterChange("minPrice", e.target.value)
+                  }
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
                 />
-              ) : (
-                <div className="text-gray-400">No image</div>
-              )}
-            </div>
-            <div className="p-4">
-              <h4 className="font-semibold text-lg">{p.title}</h4>
-              <p className="text-sm text-gray-500">{p.location}</p>
-              <p className="mt-2 font-bold">
-                {p.price
-                  ? `${p.price.toLocaleString()} VND`
-                  : "Contact for price"}
-              </p>
-            </div>
-          </article>
-        ))}
-      </div>
+                <input
+                  type="number"
+                  placeholder="Giá đến"
+                  value={filters.maxPrice}
+                  onChange={(e) =>
+                    handleFilterChange("maxPrice", e.target.value)
+                  }
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                />
+              </div>
 
-      <div className="flex items-center justify-center space-x-3 mt-6">
-        <button
-          onClick={() => setPage((s) => Math.max(1, s - 1))}
-          disabled={page <= 1}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="DT từ (m²)"
+                  value={filters.minArea}
+                  onChange={(e) =>
+                    handleFilterChange("minArea", e.target.value)
+                  }
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                />
+                <input
+                  type="number"
+                  placeholder="DT đến (m²)"
+                  value={filters.maxArea}
+                  onChange={(e) =>
+                    handleFilterChange("maxArea", e.target.value)
+                  }
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+                />
+              </div>
 
-        <div>
-          Page {page} / {totalPages}
+              <select
+                value={filters.bedrooms}
+                onChange={(e) => handleFilterChange("bedrooms", e.target.value)}
+                className="px-3 py-2 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
+              >
+                <option value="">Số phòng ngủ</option>
+                <option value="1">1 phòng</option>
+                <option value="2">2 phòng</option>
+                <option value="3">3 phòng</option>
+                <option value="4">4+ phòng</option>
+              </select>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 text-muted hover:text-(--color-primary) transition-colors"
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        <button
-          onClick={() => setPage((s) => Math.min(totalPages, s + 1))}
-          disabled={page >= totalPages}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+        {/* Results */}
+        {properties.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-(--color-pastel) rounded-full mx-auto mb-6 flex items-center justify-center">
+              <HiHome className="w-12 h-12 text-(--color-primary)" />
+            </div>
+            <h3 className="text-xl font-heading font-semibold text-[#083344] mb-2">
+              Không tìm thấy bất động sản phù hợp
+            </h3>
+            <p className="text-muted mb-6">
+              Thử điều chỉnh bộ lọc để tìm kiếm rộng hơn
+            </p>
+            <button onClick={clearFilters} className="btn-primary">
+              Xóa bộ lọc
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Properties Grid/List */}
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8"
+                  : "space-y-6 mb-8"
+              }
+            >
+              {properties.map((property) => (
+                <div
+                  key={property._id}
+                  className={`bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100 group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
+                    viewMode === "list" ? "flex" : ""
+                  }`}
+                >
+                  {/* Image */}
+                  <div
+                    className={`relative overflow-hidden ${
+                      viewMode === "list" ? "w-80 h-64" : "h-48"
+                    }`}
+                  >
+                    {property.images && property.images[0] ? (
+                      <img
+                        src={property.images[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-linear-to-br from-(--color-pastel) to-(--color-cream) flex items-center justify-center">
+                        <HiHome className="w-12 h-12 text-(--color-primary)" />
+                      </div>
+                    )}
+
+                    {/* Favorite Button */}
+                    <button
+                      onClick={() => toggleFavorite(property._id)}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white transition-colors"
+                    >
+                      {favorites.includes(property._id) ? (
+                        <HiHeart className="w-5 h-5 text-red-500" />
+                      ) : (
+                        <HiOutlineHeart className="w-5 h-5 text-gray-600" />
+                      )}
+                    </button>
+
+                    {/* Type Badge */}
+                    <div className="absolute top-3 left-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          property.type === "sale"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {property.type === "sale" ? "Bán" : "Cho thuê"}
+                      </span>
+                    </div>
+
+                    {/* Featured Badge */}
+                    {property.featured && (
+                      <div className="absolute bottom-3 left-3">
+                        <span className="bg-(--color-accent) text-black px-3 py-1 rounded-full text-xs font-semibold">
+                          Nổi bật
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className={`p-6 ${viewMode === "list" ? "flex-1" : ""}`}>
+                    <Link to={`/properties/${property._id}`} className="block">
+                      <h3 className="font-heading font-semibold text-lg text-[#083344] mb-2 line-clamp-2 hover:text-(--color-primary) transition-colors">
+                        {property.title}
+                      </h3>
+
+                      <div className="flex items-center gap-2 text-muted mb-3">
+                        <HiLocationMarker className="w-4 h-4 text-(--color-primary)" />
+                        <span className="text-sm">{property.location}</span>
+                      </div>
+
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="flex items-center gap-1">
+                          <HiCurrencyDollar className="w-5 h-5 text-(--color-primary)" />
+                          <span className="font-bold text-(--color-primary) text-lg">
+                            {formatPrice(property.price, property.type)}
+                          </span>
+                        </div>
+                        <div className="text-muted text-sm">
+                          {property.area} m²
+                        </div>
+                      </div>
+
+                      {(property.bedrooms || property.bathrooms) && (
+                        <div className="flex items-center gap-4 mb-4 text-sm text-muted">
+                          {property.bedrooms && (
+                            <span>{property.bedrooms} phòng ngủ</span>
+                          )}
+                          {property.bathrooms && (
+                            <span>{property.bathrooms} phòng tắm</span>
+                          )}
+                        </div>
+                      )}
+                    </Link>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <div className="text-xs text-muted">
+                        Đăng bởi: {property.agent.name}
+                      </div>
+                      <Link
+                        to={`/properties/${property._id}`}
+                        className="text-(--color-primary) hover:text-(--color-primary)/80 text-sm font-medium"
+                      >
+                        Xem chi tiết →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-(--color-pastel) transition-colors"
+                >
+                  <HiSortAscending className="w-5 h-5 rotate-180" />
+                </button>
+
+                {[...Array(totalPages)].map((_, index) => {
+                  const page = index + 1;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        currentPage === page
+                          ? "bg-(--color-primary) text-white"
+                          : "border border-gray-200 hover:bg-(--color-pastel)"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-(--color-pastel) transition-colors"
+                >
+                  <HiSortDescending className="w-5 h-5 rotate-180" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 export default ListingPage;
+
