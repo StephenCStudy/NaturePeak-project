@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // import { useNavigate } from "react-router-dom"; // Reserved for future
-import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   HiHome,
   HiUsers,

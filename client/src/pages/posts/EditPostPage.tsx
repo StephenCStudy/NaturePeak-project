@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { HiTrash, HiChevronLeft, HiSave } from "react-icons/hi";
 import { toast } from "react-toastify";
 

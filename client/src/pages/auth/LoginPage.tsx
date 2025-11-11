@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser } from "../context/UserContext";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { useUser } from "../../context/UserContext";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { HiMail, HiLockClosed, HiEye, HiEyeOff } from "react-icons/hi";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
-import { setCredentials } from "../store/authSlice";
+import { setCredentials } from "../../store/authSlice";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
