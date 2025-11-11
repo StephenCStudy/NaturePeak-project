@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 const ChangePasswordPage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState("");

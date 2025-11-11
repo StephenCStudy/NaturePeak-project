@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import HeroSearch from "../components/HeroSearch";
-import PropertyCard from "../components/PropertyCard";
+import HeroSearch from "../../components/HeroSearch";
+import PropertyCard from "../../components/PropertyCard";
 
 type Post = {
   _id?: string;

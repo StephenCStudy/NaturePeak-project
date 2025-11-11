@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { toast } from "react-toastify";
 
 const EditProfilePage: React.FC = () => {
