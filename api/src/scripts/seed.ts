@@ -22,7 +22,7 @@ const seed = async () => {
 
   // console.log("Creating sample users...");
   const users = await User.create([
-    { name: "Demo User", email: "abc@gmail.com", phone: "0987654321" , password: "1234567890" }
+    { name: "Demo User", email: "abc@gmail.com", phone: "0987654321", password: "1234567890" }
   ]);
 
   // console.log("Creating sample properties...");
@@ -32,6 +32,7 @@ const seed = async () => {
       description: "View đẹp, tiện nghi đầy đủ",
       price: 120000,
       location: "Hà Nội",
+      images: ["https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp"],
       bedrooms: 2,
       bathrooms: 2,
       area: 85,
@@ -42,6 +43,7 @@ const seed = async () => {
       description: "Khu dân trí cao, an ninh tốt",
       price: 350000,
       location: "Hồ Chí Minh",
+      images: ["https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828486/nha-pho-2-mat-tien-2-725_xqpy35.jpg"],
       bedrooms: 4,
       bathrooms: 3,
       area: 220,
