@@ -3,31 +3,29 @@ import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-import HomePage from "./pages/HomePage";
-import ListingPage from "./pages/ListingPage";
-import PostDetailPage from "./pages/PostDetailPage";
-import AddPostPage from "./pages/AddPostPage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import AdminPage from "./pages/AdminPage";
-import MyPostsPage from "./pages/MyPostsPage";
-import Navbar from "./components/Navbar";
+import HomePage from "./pages/home/HomePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import EditPostPage from "./pages/EditPostPage";
-import TermsPage from "./pages/TermsPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import SupportPage from "./pages/SupportPage";
-import ProfilePage from "./pages/ProfilePage";
-import EditProfilePage from "./pages/EditProfilePage";
-import ChangePasswordPage from "./pages/ChangePasswordPage";
+import ListingPage from "./pages/posts/ListingPage";
+import PostDetailPage from "./pages/posts/PostDetailPage";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import TermsPage from "./pages/legal/TermsPage";
+import PrivacyPage from "./pages/legal/PrivacyPage";
+import SupportPage from "./pages/legal/SupportPage";
+import AddPostPage from "./pages/posts/AddPostPage";
+import ProfilePage from "./pages/user/ProfilePage";
+import EditProfilePage from "./pages/user/EditProfilePage";
+import ChangePasswordPage from "./pages/user/ChangePasswordPage";
+import MyPostsPage from "./pages/user/MyPostsPage";
+import EditPostPage from "./pages/posts/EditPostPage";
+import AdminPage from "./pages/admin/AdminPage";
 
 const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
       <Header />
-      <Navbar />
       <ScrollToTop />
 
       <main className="flex-1">
