@@ -12,9 +12,9 @@ export const UserController = {
   },
 
   createUser: async (req: any, res: any) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
     try {
-      const user = await User.create({ name, email, password });
+      const user = await User.create({ name, email, password, phone });
       res.status(201).json(user);
     } catch (err) {
       res.status(400).json({ message: (err as any).message });

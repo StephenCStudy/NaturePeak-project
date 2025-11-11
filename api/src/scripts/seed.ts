@@ -22,7 +22,7 @@ const seed = async () => {
 
   // console.log("Creating sample users...");
   const users = await User.create([
-    { name: "Demo User", email: "abc@gmail.com", password: "1234567890" }
+    { name: "Demo User", email: "abc@gmail.com", phone: "0987654321" , password: "1234567890" }
   ]);
 
   // console.log("Creating sample properties...");

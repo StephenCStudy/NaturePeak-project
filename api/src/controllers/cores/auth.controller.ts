@@ -4,13 +4,13 @@ import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const AuthController = {
   register: async (req: Request, res: Response) => {
     try {
-      const { name, email, password } = req.body;
-      if (!email || !password || !name)
+      const { name, email, password, phone } = req.body;
+      if (!email || !password || !name || !phone)
         res.status(400).json({ message: "All fields required!" });
 
       const existing = await User.findOne({ email });
@@ -21,6 +21,7 @@ export const AuthController = {
       const user = await User.create({
         name,
         email,
+        phone,
         password: hashed,
         role: "user",
         createdAt: new Date(),
@@ -52,7 +53,7 @@ export const AuthController = {
 
       const token = jwt.sign(
         { id: user._id, role: (user as any).role },
-        JWT_SECRET,
+        JWT_SECRET as any,
         { expiresIn: "7d" }
       );
       res.json({ token });

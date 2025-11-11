@@ -6,6 +6,7 @@ import { HiMail, HiLockClosed, HiEye, HiEyeOff } from "react-icons/hi";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../store/authSlice";
+import type { AppDispatch } from "../../store";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ const LoginPage: React.FC = () => {
 
   const { signIn } = useUser();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
