@@ -85,13 +85,15 @@ export interface LoginData {
  * Nhận từ: POST /api/auth/login
  */
 export interface AuthResponse {
-  token: string; // JWT token (expires in 7 days)
-  rememberToken?: string; // Remember token (30 days, stored in localStorage)
+  token: string; // JWT token (expires in 30 minutes)
+  rememberToken?: string; // Remember token (24 hours, stored in localStorage)
   user: {
     id: string; // User ID
     name: string; // Họ tên
     email: string; // Email
+    phone?: string; // Số điện thoại
     role: string; // Role: "user" hoặc "admin"
+    avatarUrl?: string; // URL avatar
     isBanned?: boolean; // Trạng thái bị cấm
   };
 }

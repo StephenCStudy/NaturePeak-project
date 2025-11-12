@@ -29,8 +29,8 @@ export const AuthController = {
         createdAt: new Date(),
       });
 
-      const { password: _, ...out } = user.toObject();
-      res.status(201).json(out);
+      const { password: _, ...userData } = user.toObject();
+      res.status(201).json(userData);
     } catch (err) {
       return res.status(500).json({
         message: (err as Error).message || "Internal server error",
@@ -89,7 +89,9 @@ export const AuthController = {
           id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
+          avatarUrl: user.avatarUrl,
           isBanned: user.isBanned,
         },
       });
@@ -179,7 +181,9 @@ export const AuthController = {
           id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
+          avatarUrl: user.avatarUrl,
           isBanned: user.isBanned,
         },
       });
