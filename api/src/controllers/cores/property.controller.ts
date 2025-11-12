@@ -6,8 +6,46 @@ import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 export const PropertyController = {
   getProperties: async (req: Request, res: Response) => {
     try {
-      const properties = await Property.find().populate("agent");
-      res.json(properties);
+      const {
+        page = "1",
+        limit = "10",
+        waitingStatus,
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        waitingStatus?: string;
+      };
+
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Build filter query
+      const filter: any = {};
+      if (waitingStatus && waitingStatus !== "all") {
+        filter.waitingStatus = waitingStatus;
+      }
+
+      // Get total count for pagination
+      const total = await Property.countDocuments(filter);
+
+      // Get paginated properties
+      const properties = await Property.find(filter)
+        .populate("agent")
+        .populate("userId", "name email phone")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      res.json({
+        properties,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
     } catch (err) {
       res.status(500).json({ message: (err as any).message });
     }

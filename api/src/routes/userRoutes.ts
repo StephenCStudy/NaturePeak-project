@@ -1,10 +1,12 @@
 // Khai báo các endpoint API (file này là user endpoint api) và liên kết với controller tương ứng
 import express from "express";
 import { controllers } from "../controllers/index.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 router.get("/", controllers.UserController.getUsers);
 router.post("/", controllers.UserController.createUser);
+router.put("/:id", authenticate, controllers.UserController.updateUser);
 
 export default router;

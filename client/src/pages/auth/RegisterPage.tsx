@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
@@ -10,6 +10,9 @@ import {
   HiEyeOff,
 } from "react-icons/hi";
 import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser, clearError } from "../../store/authSlice";
+import type { AppDispatch, RootState } from "../../store";
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,11 +24,27 @@ const RegisterPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    // Clear error when component unmounts
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Show error toast if there's an error
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -79,17 +98,17 @@ const RegisterPage: React.FC = () => {
 
     if (!validateForm()) return;
 
-    setLoading(true);
     try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const { confirmPassword, ...registerData } = formData;
+      const resultAction = await dispatch(registerUser(registerData));
 
-      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
-      navigate("/login");
+      if (registerUser.fulfilled.match(resultAction)) {
+        toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
+        navigate("/login");
+      }
     } catch (error) {
-      toast.error("Đăng ký thất bại. Vui lòng thử lại!");
-    } finally {
-      setLoading(false);
+      // Error is handled by Redux and shown via useEffect
+      console.error("Register error:", error);
     }
   };
 

@@ -9,14 +9,14 @@ const propertySchema = new mongoose.Schema({
   bedrooms: { type: Number },
   bathrooms: { type: Number },
   area: { type: Number },
-  agent: { type: mongoose.Schema.Types.ObjectId, ref: "Agent" },
+  agent: { type: mongoose.Schema.Types.ObjectId, ref: "Agent" }, // ng liên hệ 
   model: { type: String, enum: ["flat", "land"], required: true }, //loai. hinh` căn họo hoặc đất nền
-  transactionType: { type: String, enum: ["sell", "rent"], required: true },
+  transactionType: { type: String, enum: ["sell", "rent"], required: true }, // bán hoặc cho thuê
   views: { type: Number, default: 0 },
   // optional owner reference (User)
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  status: { type: String, enum: ["active", "hidden"], default: "active" },
-  createdAt: { type: Date, default: Date.now },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // ng tạo
+  status: { type: String, enum: ["active", "hidden"], default: "active" }, // ẩn hiệu của user
+  createdAt: { type: Date, default: Date.now }, // ngày tạo
   // admin duyệt bài?
   waitingStatus: { type: String, enum: ["waiting", "reviewed", "block"], default: "waiting" },
 });

@@ -14,9 +14,17 @@ import {
   HiPhone,
   HiMail,
   HiUser,
+  HiChevronLeft,
+  HiChevronRight,
 } from "react-icons/hi";
 import { toast } from "react-toastify";
+import adminService from "../../services/adminService";
+import type {
+  Property as ApiProperty,
+  User as ApiUser,
+} from "../../services/adminService";
 
+// Interface để hiển thị properties với cấu trúc phù hợp với UI
 interface Property {
   _id: string;
   title: string;
@@ -37,6 +45,7 @@ interface Property {
   reports?: number;
 }
 
+// Interface để hiển thị users với cấu trúc phù hợp với UI
 interface User {
   _id: string;
   name: string;
@@ -44,7 +53,6 @@ interface User {
   phone: string;
   role: "user" | "admin";
   isActive: boolean;
-  createdAt: string;
   postsCount: number;
 }
 
@@ -70,137 +78,212 @@ const AdminPage: React.FC = () => {
     "all" | "pending" | "approved" | "rejected"
   >("all");
 
+  // Pagination states
+  const [locationPage, setLocationPage] = useState(1); // trang hiện tại quản lý khu vực
+  const [activityPage, setActivityPage] = useState(1); // trang hiện tại quản lý hoạt động gần đây
+  const LOCATIONS_PER_PAGE = 5;
+  const ACTIVITIES_PER_PAGE = 7;
+
+  // Pagination for properties
+  const [propertyPage, setPropertyPage] = useState(1);
+  const [totalPropertyPages, setTotalPropertyPages] = useState(1);
+  const [totalProperties, setTotalProperties] = useState(0);
+  const PROPERTIES_PER_PAGE = 7;
+
+  // Pagination for users
+  const [userPage, setUserPage] = useState(1);
+  const [totalUserPages, setTotalUserPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const USERS_PER_PAGE = 7;
+
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Fetch properties when filter or page changes
+  useEffect(() => {
+    if (activeTab === "properties") {
+      fetchProperties();
+    }
+  }, [filter, propertyPage, activeTab]);
+
+  // Fetch users when page changes
+  useEffect(() => {
+    if (activeTab === "users") {
+      fetchUsers();
+    }
+  }, [userPage, activeTab]);
+
+  // Helper function để chuyển đổi dữ liệu từ API sang format UI
+  const transformApiPropertyToUI = (apiProp: ApiProperty): Property => {
+    // Lấy thông tin author từ userId hoặc agent
+    const author = apiProp.userId
+      ? {
+          _id: apiProp.userId._id,
+          name: apiProp.userId.name,
+          email: apiProp.userId.email,
+          phone: apiProp.userId.phone,
+        }
+      : apiProp.agent
+      ? {
+          _id: apiProp.agent._id,
+          name: apiProp.agent.name,
+          email: apiProp.agent.email || "",
+          phone: apiProp.agent.phone,
+        }
+      : {
+          _id: "",
+          name: "Không xác định",
+          email: "",
+          phone: "",
+        };
+
+    // Chuyển đổi transactionType sang type và waitingStatus sang status
+    return {
+      _id: apiProp._id,
+      title: apiProp.title,
+      price: apiProp.price,
+      area: apiProp.area,
+      location: apiProp.location,
+      type: apiProp.transactionType === "sell" ? "sale" : "rent",
+      status:
+        apiProp.waitingStatus === "waiting"
+          ? "pending"
+          : apiProp.waitingStatus === "reviewed"
+          ? "approved"
+          : "rejected",
+      images: apiProp.images,
+      createdAt: apiProp.createdAt,
+      author,
+      views: apiProp.views || 0,
+      reports: 0, // Backend không có field này, mặc định 0
+    };
+  };
+
+  const transformApiUserToUI = (
+    apiUser: ApiUser,
+    propertiesCount: number
+  ): User => {
+    return {
+      _id: apiUser._id,
+      name: apiUser.name,
+      email: apiUser.email,
+      phone: apiUser.phone,
+      role: apiUser.role,
+      isActive: !apiUser.isBanned,
+      postsCount: propertiesCount,
+    };
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Mock API calls - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Gọi API thật từ backend (chỉ dùng cho stats)
+      const [apiProperties, apiUsers] = await Promise.all([
+        adminService.getAllProperties(),
+        adminService.getAllUsers(),
+      ]);
 
-      // Mock properties data
-      const mockProperties: Property[] = [
-        {
-          _id: "1",
-          title: "Villa vườn tuyệt đẹp, không gian xanh mát",
-          price: 2500000000,
-          area: 200,
-          location: "Thủ Đức, TP.HCM",
-          type: "sale",
-          status: "pending",
-          images: ["/assets/sample1.svg"],
-          createdAt: "2024-11-08",
-          author: {
-            _id: "user1",
-            name: "Nguyễn Văn A",
-            email: "nguyena@example.com",
-            phone: "0901234567",
-          },
-          views: 45,
-          reports: 0,
-        },
-        {
-          _id: "2",
-          title: "Căn hộ cao cấp view sông Sài Gòn",
-          price: 45000000,
-          area: 90,
-          location: "Quận 1, TP.HCM",
-          type: "rent",
-          status: "approved",
-          images: ["/assets/sample2.svg"],
-          createdAt: "2024-11-07",
-          author: {
-            _id: "user2",
-            name: "Trần Thị B",
-            email: "tranb@example.com",
-            phone: "0907654321",
-          },
-          views: 128,
-          reports: 1,
-        },
-        {
-          _id: "3",
-          title: "Đất nền dự án, mặt tiền đường lớn",
-          price: 1800000000,
-          area: 150,
-          location: "Bình Dương",
-          type: "sale",
-          status: "rejected",
-          images: ["/assets/sample1.svg"],
-          createdAt: "2024-11-06",
-          author: {
-            _id: "user3",
-            name: "Lê Văn C",
-            email: "lec@example.com",
-            phone: "0912345678",
-          },
-          views: 67,
-          reports: 3,
-        },
-      ];
+      // Đếm số tin đăng của mỗi user
+      const userPostsCount: { [key: string]: number } = {};
+      apiProperties.forEach((prop) => {
+        const userId = prop.userId?._id;
+        if (userId) {
+          userPostsCount[userId] = (userPostsCount[userId] || 0) + 1;
+        }
+      });
 
-      // Mock users data
-      const mockUsers: User[] = [
-        {
-          _id: "user1",
-          name: "Nguyễn Văn A",
-          email: "nguyena@example.com",
-          phone: "0901234567",
-          role: "user",
-          isActive: true,
-          createdAt: "2024-10-15",
-          postsCount: 3,
-        },
-        {
-          _id: "user2",
-          name: "Trần Thị B",
-          email: "tranb@example.com",
-          phone: "0907654321",
-          role: "user",
-          isActive: true,
-          createdAt: "2024-10-20",
-          postsCount: 1,
-        },
-        {
-          _id: "user3",
-          name: "Lê Văn C",
-          email: "lec@example.com",
-          phone: "0912345678",
-          role: "user",
-          isActive: false,
-          createdAt: "2024-10-25",
-          postsCount: 2,
-        },
-      ];
+      const transformedUsers = apiUsers.map((user) =>
+        transformApiUserToUI(user, userPostsCount[user._id] || 0)
+      );
 
-      // Mock stats
-      const mockStats: Stats = {
-        totalProperties: mockProperties.length,
-        pendingProperties: mockProperties.filter((p) => p.status === "pending")
-          .length,
-        activeUsers: mockUsers.filter((u) => u.isActive).length,
-        totalViews: mockProperties.reduce((sum, p) => sum + p.views, 0),
-        locationStats: [
-          { location: "TP.HCM", count: 15 },
-          { location: "Bình Dương", count: 8 },
-          { location: "Đồng Nai", count: 5 },
-          { location: "Long An", count: 3 },
-        ],
-        recentActivity: [
-          { date: "2024-11-08", properties: 2, users: 1 },
-          { date: "2024-11-07", properties: 3, users: 2 },
-          { date: "2024-11-06", properties: 1, users: 0 },
-          { date: "2024-11-05", properties: 4, users: 3 },
-        ],
+      // Tính toán thống kê
+      const apiStats = adminService.calculateStats(apiProperties, apiUsers);
+      const locationStats = adminService.getLocationStats(apiProperties);
+      const recentActivity = adminService.getRecentActivity(
+        apiProperties,
+        apiUsers
+      );
+
+      const uiStats: Stats = {
+        totalProperties: apiStats.totalProperties,
+        pendingProperties: apiStats.pendingProperties,
+        activeUsers: apiStats.activeUsers,
+        totalViews: apiStats.totalViews,
+        locationStats,
+        recentActivity,
       };
 
-      setProperties(mockProperties);
-      setUsers(mockUsers);
-      setStats(mockStats);
-    } catch (error) {
-      toast.error("Không thể tải dữ liệu");
+      setUsers(transformedUsers);
+      setStats(uiStats);
+    } catch (error: any) {
+      console.error("Error fetching data:", error);
+      toast.error(error.message || "Không thể tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProperties = async () => {
+    setLoading(true);
+    try {
+      // Convert filter to waitingStatus
+      const waitingStatusMap = {
+        all: "all",
+        pending: "waiting",
+        approved: "reviewed",
+        rejected: "block",
+      } as const;
+
+      const response = await adminService.getPropertiesPaginated({
+        page: propertyPage,
+        limit: PROPERTIES_PER_PAGE,
+        waitingStatus: waitingStatusMap[filter],
+      });
+
+      const transformedProperties = (response.properties || []).map(
+        transformApiPropertyToUI
+      );
+
+      setProperties(transformedProperties);
+      setTotalPropertyPages(response.pagination.totalPages);
+      setTotalProperties(response.pagination.total);
+    } catch (error: any) {
+      console.error("Error fetching properties:", error);
+      toast.error(error.message || "Không thể tải danh sách tin đăng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await adminService.getUsersPaginated({
+        page: userPage,
+        limit: USERS_PER_PAGE,
+      });
+
+      // Lấy tất cả properties để đếm posts count
+      const apiProperties = await adminService.getAllProperties();
+      const userPostsCount: { [key: string]: number } = {};
+      apiProperties.forEach((prop) => {
+        const userId = prop.userId?._id;
+        if (userId) {
+          userPostsCount[userId] = (userPostsCount[userId] || 0) + 1;
+        }
+      });
+
+      const transformedUsers = (response.users || []).map((user) =>
+        transformApiUserToUI(user, userPostsCount[user._id] || 0)
+      );
+
+      setUsers(transformedUsers);
+      setTotalUserPages(response.pagination.totalPages);
+      setTotalUsers(response.pagination.total);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      toast.error(error.message || "Không thể tải danh sách người dùng");
     } finally {
       setLoading(false);
     }
@@ -211,34 +294,28 @@ const AdminPage: React.FC = () => {
     action: "approve" | "reject" | "delete"
   ) => {
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setProperties((prev) =>
-        prev.map((p) => {
-          if (p._id === propertyId) {
-            if (action === "approve")
-              return { ...p, status: "approved" as const };
-            if (action === "reject")
-              return { ...p, status: "rejected" as const };
-          }
-          return p;
-        })
-      );
-
       if (action === "delete") {
-        setProperties((prev) => prev.filter((p) => p._id !== propertyId));
+        // Xóa tin đăng
+        await adminService.deleteProperty(propertyId);
+        toast.success("Đã xóa tin đăng");
+      } else {
+        // Duyệt hoặc từ chối tin đăng
+        const waitingStatus = action === "approve" ? "reviewed" : "block";
+        await adminService.updatePropertyWaitingStatus(
+          propertyId,
+          waitingStatus
+        );
+
+        const actionText =
+          action === "approve" ? "Đã duyệt tin đăng" : "Đã từ chối tin đăng";
+        toast.success(actionText);
       }
 
-      const actionText = {
-        approve: "Đã duyệt tin đăng",
-        reject: "Đã từ chối tin đăng",
-        delete: "Đã xóa tin đăng",
-      }[action];
-
-      toast.success(actionText);
-    } catch (error) {
-      toast.error("Không thể thực hiện hành động");
+      // Refresh properties list and stats
+      await Promise.all([fetchProperties(), fetchData()]);
+    } catch (error: any) {
+      console.error("Error handling property action:", error);
+      toast.error(error.message || "Không thể thực hiện hành động");
     }
   };
 
@@ -247,29 +324,28 @@ const AdminPage: React.FC = () => {
     action: "activate" | "deactivate"
   ) => {
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === userId ? { ...u, isActive: action === "activate" } : u
-        )
-      );
+      const isBanned = action === "deactivate";
+      await adminService.toggleUserBanStatus(userId, isBanned);
 
       toast.success(
         action === "activate"
           ? "Đã kích hoạt tài khoản"
           : "Đã vô hiệu hóa tài khoản"
       );
-    } catch (error) {
-      toast.error("Không thể thực hiện hành động");
+
+      // Refresh users list and stats
+      await Promise.all([fetchUsers(), fetchData()]);
+    } catch (error: any) {
+      console.error("Error handling user action:", error);
+      toast.error(error.message || "Không thể thực hiện hành động");
     }
   };
 
-  const filteredProperties = properties.filter((property) => {
-    if (filter === "all") return true;
-    return property.status === filter;
-  });
+  // Remove filteredProperties - backend handles filtering
+  // const filteredProperties = properties.filter((property) => {
+  //   if (filter === "all") return true;
+  //   return property.status === filter;
+  // });
 
   const formatPrice = (price: number, type: string) => {
     if (price >= 1000000000) {
@@ -385,7 +461,7 @@ const AdminPage: React.FC = () => {
                 <h3 className="font-semibold text-[#083344] mb-1">
                   Người dùng hoạt động
                 </h3>
-                <p className="text-sm text-muted">Tài khoản đang active</p>
+                <p className="text-sm text-muted">Không bị cấm (trừ admin)</p>
               </button>
 
               <button
@@ -417,50 +493,117 @@ const AdminPage: React.FC = () => {
                   Thống kê theo khu vực
                 </h3>
                 <div className="space-y-5">
-                  {stats?.locationStats.map((item, index) => {
-                    const maxCount = Math.max(
-                      ...stats.locationStats.map((s) => s.count)
-                    );
-                    const percentage = (item.count / maxCount) * 100;
-                    const colors = [
-                      "bg-blue-500",
-                      "bg-green-500",
-                      "bg-yellow-500",
-                      "bg-purple-500",
-                      "bg-pink-500",
-                      "bg-indigo-500",
-                    ];
-                    return (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-[#083344]">
-                            {item.location}
-                          </span>
-                          <span className="font-bold text-(--color-primary)">
-                            {item.count} tin
-                          </span>
-                        </div>
-                        <div className="relative w-full bg-gray-100 rounded-full h-8 overflow-hidden shadow-inner">
-                          <div
-                            className={`${
-                              colors[index % colors.length]
-                            } h-full rounded-full transition-all duration-700 flex items-center justify-end pr-3`}
-                            style={{ width: `${percentage}%` }}
-                          >
-                            <span className="text-xs font-semibold text-white drop-shadow">
-                              {percentage.toFixed(0)}%
+                  {stats?.locationStats
+                    .slice(
+                      (locationPage - 1) * LOCATIONS_PER_PAGE,
+                      locationPage * LOCATIONS_PER_PAGE
+                    )
+                    .map((item, index) => {
+                      const maxCount = Math.max(
+                        ...stats.locationStats.map((s) => s.count)
+                      );
+                      const percentage = (item.count / maxCount) * 100;
+                      const colors = [
+                        "bg-blue-500",
+                        "bg-green-500",
+                        "bg-yellow-500",
+                        "bg-purple-500",
+                        "bg-pink-500",
+                        "bg-indigo-500",
+                      ];
+                      const actualIndex =
+                        (locationPage - 1) * LOCATIONS_PER_PAGE + index;
+                      return (
+                        <div key={actualIndex} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-[#083344]">
+                              {item.location}
+                            </span>
+                            <span className="font-bold text-(--color-primary)">
+                              {item.count} tin
                             </span>
                           </div>
+                          <div className="relative w-full bg-gray-100 rounded-full h-8 overflow-hidden shadow-inner">
+                            <div
+                              className={`${
+                                colors[actualIndex % colors.length]
+                              } h-full rounded-full transition-all duration-700 flex items-center justify-end pr-3`}
+                              style={{ width: `${percentage}%` }}
+                            >
+                              <span className="text-xs font-semibold text-white drop-shadow">
+                                {percentage.toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <p className="text-xs text-muted italic">
-                    📊 Biểu đồ phân bố tin đăng theo từng khu vực
-                  </p>
-                </div>
+
+                {/* Pagination for locations */}
+                {stats && stats.locationStats.length > LOCATIONS_PER_PAGE && (
+                  <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
+                    <p className="text-xs text-muted italic">
+                      📊 Hiển thị{" "}
+                      {Math.min(
+                        (locationPage - 1) * LOCATIONS_PER_PAGE + 1,
+                        stats.locationStats.length
+                      )}{" "}
+                      -{" "}
+                      {Math.min(
+                        locationPage * LOCATIONS_PER_PAGE,
+                        stats.locationStats.length
+                      )}{" "}
+                      trong tổng {stats.locationStats.length} khu vực
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setLocationPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={locationPage === 1}
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <HiChevronLeft className="w-5 h-5 text-[#083344]" />
+                      </button>
+                      <span className="text-sm font-medium text-[#083344]">
+                        {locationPage} /{" "}
+                        {Math.ceil(
+                          stats.locationStats.length / LOCATIONS_PER_PAGE
+                        )}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setLocationPage((p) =>
+                            Math.min(
+                              Math.ceil(
+                                stats.locationStats.length / LOCATIONS_PER_PAGE
+                              ),
+                              p + 1
+                            )
+                          )
+                        }
+                        disabled={
+                          locationPage >=
+                          Math.ceil(
+                            stats.locationStats.length / LOCATIONS_PER_PAGE
+                          )
+                        }
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <HiChevronRight className="w-5 h-5 text-[#083344]" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {stats && stats.locationStats.length <= LOCATIONS_PER_PAGE && (
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-muted italic">
+                      📊 Biểu đồ phân bố tin đăng theo từng khu vực
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="bg-white rounded-2xl shadow-soft p-6">
@@ -468,28 +611,91 @@ const AdminPage: React.FC = () => {
                   Hoạt động gần đây
                 </h3>
                 <div className="space-y-4">
-                  {stats?.recentActivity.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-(--color-cream) rounded-xl"
-                    >
-                      <div>
-                        <div className="font-semibold text-[#083344]">
-                          {new Date(item.date).toLocaleDateString("vi-VN")}
+                  {stats?.recentActivity
+                    .slice(
+                      (activityPage - 1) * ACTIVITIES_PER_PAGE,
+                      activityPage * ACTIVITIES_PER_PAGE
+                    )
+                    .map((item, index) => (
+                      <div
+                        key={`${item.date}-${index}`}
+                        className="flex items-center justify-between p-4 bg-(--color-cream) rounded-xl"
+                      >
+                        <div>
+                          <div className="font-semibold text-[#083344]">
+                            {new Date(item.date).toLocaleDateString("vi-VN")}
+                          </div>
+                          <div className="text-sm text-muted">
+                            {item.properties} tin đăng, {item.users} người dùng
+                            mới
+                          </div>
                         </div>
-                        <div className="text-sm text-muted">
-                          {item.properties} tin đăng, {item.users} người dùng
-                          mới
+                        <div className="text-right">
+                          <div className="text-(--color-primary) font-bold">
+                            +{item.properties + item.users}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-(--color-primary) font-bold">
-                          +{item.properties + item.users}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
+
+                {/* Pagination for activities */}
+                {stats && stats.recentActivity.length > ACTIVITIES_PER_PAGE && (
+                  <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
+                    <p className="text-xs text-muted italic">
+                      📅 Hiển thị{" "}
+                      {Math.min(
+                        (activityPage - 1) * ACTIVITIES_PER_PAGE + 1,
+                        stats.recentActivity.length
+                      )}{" "}
+                      -{" "}
+                      {Math.min(
+                        activityPage * ACTIVITIES_PER_PAGE,
+                        stats.recentActivity.length
+                      )}{" "}
+                      trong tổng {stats.recentActivity.length} hoạt động
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setActivityPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={activityPage === 1}
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <HiChevronLeft className="w-5 h-5 text-[#083344]" />
+                      </button>
+                      <span className="text-sm font-medium text-[#083344]">
+                        {activityPage} /{" "}
+                        {Math.ceil(
+                          stats.recentActivity.length / ACTIVITIES_PER_PAGE
+                        )}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setActivityPage((p) =>
+                            Math.min(
+                              Math.ceil(
+                                stats.recentActivity.length /
+                                  ACTIVITIES_PER_PAGE
+                              ),
+                              p + 1
+                            )
+                          )
+                        }
+                        disabled={
+                          activityPage >=
+                          Math.ceil(
+                            stats.recentActivity.length / ACTIVITIES_PER_PAGE
+                          )
+                        }
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <HiChevronRight className="w-5 h-5 text-[#083344]" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -498,33 +704,39 @@ const AdminPage: React.FC = () => {
         {/* Properties Tab */}
         {activeTab === "properties" && (
           <div className="space-y-6">
-            {/* Filter Tabs */}
+            {/* Filter Tabs - Get counts from stats */}
             <div className="bg-white rounded-2xl p-2 shadow-soft">
               <div className="flex gap-2">
                 {[
-                  { key: "all", label: "Tất cả", count: properties.length },
+                  {
+                    key: "all",
+                    label: "Tất cả",
+                    count: stats?.totalProperties || 0,
+                  },
                   {
                     key: "pending",
                     label: "Chờ duyệt",
-                    count: properties.filter((p) => p.status === "pending")
-                      .length,
+                    count: stats?.pendingProperties || 0,
                   },
                   {
                     key: "approved",
                     label: "Đã duyệt",
-                    count: properties.filter((p) => p.status === "approved")
-                      .length,
+                    count:
+                      (stats?.totalProperties || 0) -
+                      (stats?.pendingProperties || 0),
                   },
                   {
                     key: "rejected",
                     label: "Từ chối",
-                    count: properties.filter((p) => p.status === "rejected")
-                      .length,
+                    count: 0, // Backend needs to add this to stats
                   },
                 ].map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => setFilter(tab.key as any)}
+                    onClick={() => {
+                      setFilter(tab.key as any);
+                      setPropertyPage(1); // Reset to page 1 when filter changes
+                    }}
                     className={`px-4 py-2 rounded-xl font-medium transition-colors ${
                       filter === tab.key
                         ? "bg-(--color-primary) text-white"
@@ -539,7 +751,7 @@ const AdminPage: React.FC = () => {
 
             {/* Properties List */}
             <div className="space-y-4">
-              {filteredProperties.map((property) => (
+              {properties.map((property) => (
                 <div
                   key={property._id}
                   className="bg-white rounded-2xl shadow-soft overflow-hidden"
@@ -675,7 +887,61 @@ const AdminPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* No properties message */}
+              {properties.length === 0 && (
+                <div className="bg-white rounded-2xl shadow-soft p-12 text-center">
+                  <HiHome className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted">
+                    Không có tin đăng nào
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalProperties > PROPERTIES_PER_PAGE && (
+              <div className="bg-white rounded-2xl shadow-soft p-4 mt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted">
+                    Hiển thị{" "}
+                    {Math.min(
+                      (propertyPage - 1) * PROPERTIES_PER_PAGE + 1,
+                      totalProperties
+                    )}{" "}
+                    -{" "}
+                    {Math.min(
+                      propertyPage * PROPERTIES_PER_PAGE,
+                      totalProperties
+                    )}{" "}
+                    trong tổng {totalProperties} tin đăng
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPropertyPage((p) => Math.max(1, p - 1))}
+                      disabled={propertyPage === 1}
+                      className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <HiChevronLeft className="w-5 h-5 text-[#083344]" />
+                    </button>
+                    <span className="text-sm font-medium text-[#083344]">
+                      {propertyPage} / {totalPropertyPages}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setPropertyPage((p) =>
+                          Math.min(totalPropertyPages, p + 1)
+                        )
+                      }
+                      disabled={propertyPage >= totalPropertyPages}
+                      className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <HiChevronRight className="w-5 h-5 text-[#083344]" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -700,9 +966,6 @@ const AdminPage: React.FC = () => {
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
                       Số tin đăng
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
-                      Ngày tham gia
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
                       Trạng thái
@@ -752,10 +1015,6 @@ const AdminPage: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="px-6 py-4 text-muted text-sm">
-                        {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                      </td>
-
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -787,9 +1046,56 @@ const AdminPage: React.FC = () => {
                       </td>
                     </tr>
                   ))}
+
+                  {/* No users message */}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <HiUser className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <p className="text-lg font-medium text-muted">
+                          Không có người dùng nào
+                        </p>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalUsers > USERS_PER_PAGE && (
+              <div className="bg-white border-t border-gray-200 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted">
+                    Hiển thị{" "}
+                    {Math.min((userPage - 1) * USERS_PER_PAGE + 1, totalUsers)}{" "}
+                    - {Math.min(userPage * USERS_PER_PAGE, totalUsers)} trong
+                    tổng {totalUsers} người dùng
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                      disabled={userPage === 1}
+                      className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <HiChevronLeft className="w-5 h-5 text-[#083344]" />
+                    </button>
+                    <span className="text-sm font-medium text-[#083344]">
+                      {userPage} / {totalUserPages}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setUserPage((p) => Math.min(totalUserPages, p + 1))
+                      }
+                      disabled={userPage >= totalUserPages}
+                      className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <HiChevronRight className="w-5 h-5 text-[#083344]" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

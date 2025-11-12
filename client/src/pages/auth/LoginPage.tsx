@@ -1,23 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser } from "../../context/UserContext";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { HiMail, HiLockClosed, HiEye, HiEyeOff } from "react-icons/hi";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
-import { setCredentials } from "../../store/authSlice";
-import type { AppDispatch } from "../../store";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, clearError } from "../../store/authSlice";
+import type { AppDispatch, RootState } from "../../store";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const { signIn } = useUser();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { loading, error, token } = useSelector(
+    (state: RootState) => state.auth
+  );
+
+  useEffect(() => {
+    // Clear error when component unmounts
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Redirect if already logged in
+    if (token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
+
+  useEffect(() => {
+    // Show error toast if there's an error
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -43,30 +66,18 @@ const LoginPage: React.FC = () => {
 
     if (!validateForm()) return;
 
-    setLoading(true);
     try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Mock successful login
-      const user = await signIn("mock-token");
-      const role =
-        email.trim().toLowerCase() === "admin@test.com"
-          ? "admin"
-          : user?.role ?? "user";
-      dispatch(
-        setCredentials({
-          user: { ...user, email, role },
-          token: localStorage.getItem("token") || "mock-token",
-          role,
-        })
+      const resultAction = await dispatch(
+        loginUser({ email, password, rememberMe })
       );
-      toast.success("Đăng nhập thành công!");
-      navigate("/");
+
+      if (loginUser.fulfilled.match(resultAction)) {
+        toast.success("Đăng nhập thành công!");
+        navigate("/");
+      }
     } catch (error) {
-      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
-    } finally {
-      setLoading(false);
+      // Error is handled by Redux and shown via useEffect
+      console.error("Login error:", error);
     }
   };
 
@@ -195,6 +206,8 @@ const LoginPage: React.FC = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 text-(--color-primary) border-gray-300 rounded focus:ring-(--color-primary)"
                 />
                 <span className="ml-2 text-sm text-muted">
@@ -232,10 +245,10 @@ const LoginPage: React.FC = () => {
               </p>
               <div className="space-y-1 text-muted">
                 <p>
-                  <strong>User:</strong> user@test.com / password
+                  <strong>User:</strong> abc@gmail.com / 1234567890
                 </p>
                 <p>
-                  <strong>Admin:</strong> admin@test.com / password
+                  <strong>Admin:</strong> admin@gmail.com / admin123
                 </p>
               </div>
             </div>
