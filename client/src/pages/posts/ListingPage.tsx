@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   HiSearch,
@@ -14,7 +15,6 @@ import {
   HiOutlineHeart,
   HiHeart,
 } from "react-icons/hi";
-import { toast } from "react-toastify";
 
 interface Property {
   _id: string;
@@ -79,10 +79,83 @@ const ListingPage: React.FC = () => {
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Build query params
+      const params = new URLSearchParams();
 
-      // Mock data with filtering and sorting
+      if (filters.search) params.append("search", filters.search);
+      if (filters.type) params.append("type", filters.type);
+      if (filters.propertyType)
+        params.append("propertyType", filters.propertyType);
+      if (filters.location) params.append("location", filters.location);
+      if (filters.minPrice) params.append("minPrice", filters.minPrice);
+      if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
+      if (filters.minArea) params.append("minArea", filters.minArea);
+      if (filters.maxArea) params.append("maxArea", filters.maxArea);
+      if (filters.bedrooms) params.append("bedrooms", filters.bedrooms);
+      if (filters.bathrooms) params.append("bathrooms", filters.bathrooms);
+
+      params.append("page", currentPage.toString());
+      params.append("sort", sortBy);
+
+      // Gọi API thực tế
+      const response = await axios.get(`/api/properties?${params.toString()}`);
+      const data = response.data;
+
+      // Map dữ liệu từ API, giữ nguyên các field thiếu
+      const mappedProperties: Property[] = (data.properties || data || []).map(
+        (p: any) => ({
+          _id: p._id || "",
+          title: p.title || "Chưa có tiêu đề",
+          price: p.price || 0,
+          area: p.area || 0,
+          location: p.location || "Chưa cập nhật",
+          type: p.type || "sale",
+          propertyType: p.propertyType || "house",
+          bedrooms: p.bedrooms,
+          bathrooms: p.bathrooms,
+          images: p.images || [],
+          createdAt: p.createdAt || new Date().toISOString(),
+          agent: p.agent ||
+            p.userId || { name: "Chưa cập nhật", phone: "Liên hệ" },
+          status: p.status || "available",
+          featured: p.featured || false,
+        })
+      );
+
+      // Apply client-side sorting if needed
+      const sortedProperties = [...mappedProperties].sort((a, b) => {
+        switch (sortBy) {
+          case "newest":
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          case "oldest":
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+          case "price-asc":
+            return a.price - b.price;
+          case "price-desc":
+            return b.price - a.price;
+          case "area-asc":
+            return a.area - b.area;
+          case "area-desc":
+            return b.area - a.area;
+          default:
+            return 0;
+        }
+      });
+
+      setProperties(sortedProperties);
+      setTotalCount(data.total || sortedProperties.length);
+      setTotalPages(data.totalPages || Math.ceil(sortedProperties.length / 6));
+
+      console.log(`Loaded ${sortedProperties.length} properties successfully`);
+    } catch (error: any) {
+      // Xử lý lỗi im lặng, log vào console
+      console.error("Failed to fetch properties:", error);
+
+      // Fallback sang mock data nếu API fail
       let mockData: Property[] = [
         {
           _id: "1",
@@ -173,7 +246,7 @@ const ListingPage: React.FC = () => {
         },
       ];
 
-      // Apply filters
+      // Apply filters to mock data
       if (filters.search) {
         mockData = mockData.filter(
           (p) =>
@@ -251,8 +324,6 @@ const ListingPage: React.FC = () => {
       setProperties(paginatedData);
       setTotalCount(mockData.length);
       setTotalPages(Math.ceil(mockData.length / itemsPerPage));
-    } catch (error) {
-      toast.error("Không thể tải danh sách bất động sản");
     } finally {
       setLoading(false);
     }
@@ -285,10 +356,10 @@ const ListingPage: React.FC = () => {
         ? prev.filter((id) => id !== propertyId)
         : [...prev, propertyId]
     );
-    toast.success(
+    console.log(
       favorites.includes(propertyId)
-        ? "Đã bỏ khỏi yêu thích"
-        : "Đã thêm vào yêu thích"
+        ? "Removed from favorites"
+        : "Added to favorites"
     );
   };
 
@@ -393,7 +464,7 @@ const ListingPage: React.FC = () => {
           </div>
 
           {/* Advanced Filters */}
-        {showFilters && (
+          {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-200">
               <select
                 value={filters.type}
@@ -413,10 +484,8 @@ const ListingPage: React.FC = () => {
                 className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Loại hình</option>
-                <option value="house">Nhà ở</option>
                 <option value="apartment">Căn hộ</option>
                 <option value="land">Đất nền</option>
-                <option value="commercial">Thương mại</option>
               </select>
 
               <input
@@ -460,7 +529,10 @@ const ListingPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex gap-2 items-stretch" style={{marginLeft:"75px"}}>
+              <div
+                className="flex gap-2 items-stretch"
+                style={{ marginLeft: "75px" }}
+              >
                 <input
                   type="number"
                   placeholder="DT từ (m²)"

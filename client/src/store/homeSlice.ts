@@ -49,9 +49,11 @@ export const fetchProperties = createAsyncThunk(
 
       return {
         properties: response.data as Property[],
-        message: `Đã tải thành công ${response.data.length} bất động sản`,
+        // Loại bỏ message tự động
       };
     } catch (error: any) {
+      // Log lỗi để debug nhưng không hiển thị cho user
+      console.error("fetchProperties error:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -83,9 +85,11 @@ export const createTestProperty = createAsyncThunk(
 
       return {
         property: response.data,
-        message: `Đã tạo thành công bất động sản: ${testProperty.title}`,
+        // Loại bỏ message tự động
       };
     } catch (error: any) {
+      // Log lỗi để debug nhưng không hiển thị cho user
+      console.error("createTestProperty error:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -120,18 +124,20 @@ export const homeSlice = createSlice({
       .addCase(fetchProperties.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.message = "Đang tải dữ liệu bất động sản...";
+        state.message = null; // Không hiển thị loading message
       })
       .addCase(fetchProperties.fulfilled, (state, action) => {
         state.loading = false;
         state.properties = action.payload.properties.slice(0, 8); // Chỉ lấy 8 properties đầu tiên
-        state.message = action.payload.message;
+        state.message = null; // Không hiển thị success message
         state.lastFetch = Date.now();
         state.error = null;
       })
       .addCase(fetchProperties.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        // Log lỗi nhưng không set vào state để hiển thị UI
+        console.error("fetchProperties rejected:", action.payload);
+        state.error = null; // Không hiển thị error message
         state.message = null;
         // Sử dụng mock data khi API failed
         state.properties = [
@@ -162,16 +168,20 @@ export const homeSlice = createSlice({
       // Create test property
       .addCase(createTestProperty.pending, (state) => {
         state.loading = true;
-        state.message = "Đang tạo bất động sản test...";
+        state.message = null; // Không hiển thị loading message
       })
       .addCase(createTestProperty.fulfilled, (state, action) => {
         state.loading = false;
-        state.message = action.payload.message;
+        state.message = null; // Không hiển thị success message
         state.error = null;
+        // Log thành công để debug
+        console.log("createTestProperty fulfilled:", action.payload.property);
       })
       .addCase(createTestProperty.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        // Log lỗi nhưng không set vào state để hiển thị UI
+        console.error("createTestProperty rejected:", action.payload);
+        state.error = null; // Không hiển thị error message
         state.message = null;
       });
   },

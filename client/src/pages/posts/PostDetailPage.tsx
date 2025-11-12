@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import axios from "axios";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   HiLocationMarker,
@@ -16,7 +17,6 @@ import {
   HiChevronRight,
   HiX,
 } from "react-icons/hi";
-import { toast } from "react-toastify";
 
 interface Property {
   _id: string;
@@ -69,10 +69,44 @@ const PostDetailPage: React.FC = () => {
   const fetchPropertyDetail = async (propertyId: string) => {
     setLoading(true);
     try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Gọi API thực tế
+      const response = await axios.get(`/api/properties/${propertyId}`);
+      const data = response.data;
 
-      // Mock data
+      // Set dữ liệu từ API, giữ nguyên các field thiếu
+      setProperty({
+        _id: data._id || propertyId,
+        title: data.title || "Chưa có tiêu đề",
+        description: data.description || "",
+        price: data.price || 0,
+        area: data.area || 0,
+        location: data.location || "Chưa cập nhật",
+        type: data.type || "sale",
+        propertyType: data.propertyType || "house",
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        features: data.features || [],
+        images: data.images || [],
+        createdAt: data.createdAt || new Date().toISOString(),
+        updatedAt: data.updatedAt || new Date().toISOString(),
+        agent: data.agent ||
+          data.userId || {
+            _id: "unknown",
+            name: "Chưa cập nhật",
+            phone: "Liên hệ qua hệ thống",
+            email: "Liên hệ qua hệ thống",
+          },
+        status: data.status || "available",
+        views: data.views || 0,
+        featured: data.featured || false,
+      });
+
+      console.log("Property loaded successfully:", data);
+    } catch (error: any) {
+      // Xử lý lỗi im lặng, không hiển thị toast
+      console.error("Failed to fetch property detail:", error);
+
+      // Fallback sang mock data nếu API fail
       const mockProperty: Property = {
         _id: propertyId,
         title:
@@ -132,15 +166,6 @@ Thiết kế và tiện ích:
       };
 
       setProperty(mockProperty);
-
-      // Simulate view count increment
-      setTimeout(() => {
-        setProperty((prev) =>
-          prev ? { ...prev, views: prev.views + 1 } : null
-        );
-      }, 2000);
-    } catch (error) {
-      toast.error("Không thể tải thông tin chi tiết");
     } finally {
       setLoading(false);
     }
@@ -150,39 +175,44 @@ Thiết kế và tiện ích:
     e.preventDefault();
 
     if (!contactForm.name || !contactForm.phone || !contactForm.message) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+      console.error("Form validation failed: Missing required fields");
       return;
     }
 
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Gọi API gửi thông tin liên hệ
+      await axios.post("/api/contact", {
+        propertyId: property?._id,
+        ...contactForm,
+      });
 
-      toast.success("Đã gửi thông tin liên hệ thành công!");
+      console.log("Contact form submitted successfully");
       setShowContactForm(false);
       setContactForm({ name: "", phone: "", email: "", message: "" });
     } catch (error) {
-      toast.error("Không thể gửi thông tin liên hệ");
+      console.error("Failed to send contact form:", error);
     }
   };
 
   const toggleFavorite = () => {
     setIsFavorite((prev) => !prev);
-    toast.success(
-      isFavorite ? "Đã bỏ khỏi yêu thích" : "Đã thêm vào yêu thích"
-    );
+    console.log(isFavorite ? "Removed from favorites" : "Added to favorites");
   };
 
   const shareProperty = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: property?.title,
-        text: property?.description,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Đã sao chép link");
+    try {
+      if (navigator.share) {
+        navigator.share({
+          title: property?.title,
+          text: property?.description,
+          url: window.location.href,
+        });
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        console.log("Link copied to clipboard");
+      }
+    } catch (error) {
+      console.error("Failed to share property:", error);
     }
   };
 
@@ -686,4 +716,3 @@ Thiết kế và tiện ích:
 };
 
 export default PostDetailPage;
-
