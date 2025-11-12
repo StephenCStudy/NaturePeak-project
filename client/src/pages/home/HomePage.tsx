@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import HeroSearch from "../../components/HeroSearch";
 import PropertyCard from "../../components/PropertyCard";
@@ -11,6 +11,7 @@ import {
 } from "../../store/homeSlice";
 
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { properties, loading, error, message } = useSelector(
     (state: RootState) => state.home
@@ -63,6 +64,14 @@ const HomePage: React.FC = () => {
       console.error("Failed to refresh properties:", error);
     }
   };
+
+  // Hàm xem chi tiết bài đăng
+  const handleViewDetail = (propertyId: string | undefined) => {
+    if (propertyId) {
+      navigate(`/properties/${propertyId}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-b from-(--color-cream) to-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -105,7 +114,7 @@ const HomePage: React.FC = () => {
                 area={p.area}
                 location={p.location}
                 image={p.images && p.images[0]}
-                onView={() => console.log("view", p._id)}
+                onView={() => handleViewDetail(p._id)}
               />
             ))}
           </div>
