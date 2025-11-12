@@ -73,10 +73,8 @@ const HeroSearch: React.FC<{ onSearch?: (q: any) => void }> = ({
                 </label>
                 <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:border-(--color-primary) outline-none transition-colors">
                   <option>Tất cả loại</option>
-                  <option>🏠 Nhà riêng</option>
-                  <option>🏡 Biệt thự</option>
+                  <option>🏠 Căn hộ</option>
                   <option>🏞️ Đất nền</option>
-                  <option>🏢 Thương mại</option>
                 </select>
               </div>
 

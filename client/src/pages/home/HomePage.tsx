@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import HeroSearch from "../../components/HeroSearch";
 import PropertyCard from "../../components/PropertyCard";
 import type { AppDispatch, RootState } from "../../store";
@@ -17,30 +16,52 @@ const HomePage: React.FC = () => {
     (state: RootState) => state.home
   );
 
-  // Xử lý khi có message từ store
+  // Xử lý lỗi và message một cách im lặng
   useEffect(() => {
-    if (message) {
-      toast.success(message);
-      dispatch(clearMessage());
+    try {
+      if (message) {
+        // Log thông báo thay vì hiển thị toast
+        console.log("HomePage Message:", message);
+        dispatch(clearMessage());
+      }
+    } catch (err) {
+      console.error("Error clearing message:", err);
     }
   }, [message, dispatch]);
 
-  // Xử lý khi có error từ store
   useEffect(() => {
-    if (error) {
-      toast.error(error);
-      dispatch(clearError());
+    try {
+      if (error) {
+        // Log lỗi thay vì hiển thị toast
+        console.error("HomePage Error:", error);
+        dispatch(clearError());
+      }
+    } catch (err) {
+      console.error("Error clearing error:", err);
     }
   }, [error, dispatch]);
 
-  // Fetch properties khi component mount
+  // Fetch properties khi component mount với xử lý lỗi
   useEffect(() => {
-    dispatch(fetchProperties());
+    const loadProperties = async () => {
+      try {
+        await dispatch(fetchProperties()).unwrap();
+      } catch (error) {
+        // Xử lý lỗi một cách im lặng
+        console.error("Failed to fetch properties:", error);
+      }
+    };
+
+    loadProperties();
   }, [dispatch]);
 
-  // Hàm refresh lại danh sách
-  const handleRefresh = () => {
-    dispatch(fetchProperties());
+  // Hàm refresh lại danh sách với try-catch
+  const handleRefresh = async () => {
+    try {
+      await dispatch(fetchProperties()).unwrap();
+    } catch (error) {
+      console.error("Failed to refresh properties:", error);
+    }
   };
   return (
     <div className="min-h-screen bg-linear-to-b from-(--color-cream) to-white">
@@ -69,9 +90,7 @@ const HomePage: React.FC = () => {
             <div className="flex items-center justify-center py-16">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-4 border-(--color-pastel) border-t-(--color-primary) rounded-full animate-spin"></div>
-                <p className="text-muted">
-                  {message || "Đang tải tin đăng..."}
-                </p>
+                <p className="text-muted">Đang tải tin đăng...</p>
               </div>
             </div>
           )}
@@ -92,7 +111,7 @@ const HomePage: React.FC = () => {
           </div>
 
           {/* Empty State */}
-          {properties.length === 0 && !loading && !error && (
+          {properties.length === 0 && !loading && (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-(--color-pastel) rounded-full mx-auto mb-6 flex items-center justify-center">
                 <svg

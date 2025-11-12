@@ -413,10 +413,8 @@ const ListingPage: React.FC = () => {
                 className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Loại hình</option>
-                <option value="house">Nhà ở</option>
                 <option value="apartment">Căn hộ</option>
                 <option value="land">Đất nền</option>
-                <option value="commercial">Thương mại</option>
               </select>
 
               <input
