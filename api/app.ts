@@ -5,6 +5,11 @@ import userRoutes from "./src/routes/userRoutes.js";
 import propertyRoutes from "./src/routes/propertyRoutes.js";
 import authRoutes from "./src/routes/auth.js";
 
+// Import tất cả models để register với Mongoose
+import "./src/models/User.js";
+import "./src/models/Agent.js";
+import "./src/models/Property.js";
+
 dotenv.config();
 
 const app = express();

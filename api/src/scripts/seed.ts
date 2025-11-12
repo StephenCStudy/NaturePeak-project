@@ -16,8 +16,18 @@ const seed = async () => {
 
   // console.log("Creating sample agents...");
   const agents = await Agent.create([
-    { name: "Nguyen Van A", email: "nva@example.com", phone: "0987654321", agency: "Dream Homes" },
-    { name: "Tran Thi B", email: "tvb@example.com", phone: "0123456789", agency: "Prime Realty" }
+    {
+      name: "Nguyen Van A",
+      email: "nva@example.com",
+      phone: "0987654321",
+      agency: "Dream Homes",
+    },
+    {
+      name: "Tran Thi B",
+      email: "tvb@example.com",
+      phone: "0123456789",
+      agency: "Prime Realty",
+    },
   ]);
 
   // console.log("Creating sample users...");
@@ -30,7 +40,7 @@ const seed = async () => {
     {
       title: "Căn hộ cao cấp gần trung tâm",
       description: "View đẹp, tiện nghi đầy đủ",
-      price: 120000,
+      price: 2800000000, // 2.8 tỷ VND
       location: "Hà Nội",
       images: ["https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp"],
       bedrooms: 2,
@@ -41,14 +51,34 @@ const seed = async () => {
     {
       title: "Nhà phố sang trọng",
       description: "Khu dân trí cao, an ninh tốt",
-      price: 350000,
+      price: 4500000000, // 4.5 tỷ VND
       location: "Hồ Chí Minh",
       images: ["https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828486/nha-pho-2-mat-tien-2-725_xqpy35.jpg"],
       bedrooms: 4,
       bathrooms: 3,
       area: 220,
       agent: agents[1]?._id,
-    }
+    },
+    {
+      title: "Chung cư mini đầu tư",
+      description: "Giá tốt, pháp lý rõ ràng",
+      price: 1200000000, // 1.2 tỷ VND
+      location: "Đà Nẵng",
+      bedrooms: 1,
+      bathrooms: 1,
+      area: 45,
+      agent: agents[0]?._id,
+    },
+    {
+      title: "Biệt thự sân vườn",
+      description: "Không gian xanh, yên tĩnh",
+      price: 8500000000, // 8.5 tỷ VND
+      location: "Vũng Tàu",
+      bedrooms: 5,
+      bathrooms: 4,
+      area: 300,
+      agent: agents[1]?._id,
+    },
   ]);
 
   console.log("Seed finished.");

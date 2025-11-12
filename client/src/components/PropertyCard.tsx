@@ -74,7 +74,11 @@ const PropertyCard: React.FC<Props> = ({
             <div className="flex-1">
               <div className="text-(--color-primary) font-bold text-xl mb-1">
                 {typeof price === "number"
-                  ? `${(price / 1000000000).toFixed(1)} tỷ`
+                  ? price >= 1000000000
+                    ? `${(price / 1000000000).toFixed(1)} tỷ`
+                    : price >= 1000000
+                    ? `${(price / 1000000).toFixed(0)} triệu`
+                    : `${price.toLocaleString()} nghìn`
                   : price || "Thỏa thuận"}
               </div>
               <div className="text-sm text-muted flex items-center gap-2">
@@ -122,4 +126,3 @@ const PropertyCard: React.FC<Props> = ({
 };
 
 export default PropertyCard;
-
