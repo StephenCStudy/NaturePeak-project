@@ -1,18 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HiOutlineHome, HiOutlineSparkles } from "react-icons/hi";
 import { FaUser } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "../store";
-import { signOut as signOutAction } from "../store/authSlice";
-import { useUser } from "../context/UserContext";
+import type { RootState, AppDispatch } from "../store";
+import { logoutUser } from "../store/authSlice";
+import { toast } from "react-toastify";
 
 const Header: React.FC = () => {
   const role = useSelector((s: RootState) => s.auth.role);
   const token = useSelector((s: RootState) => s.auth.token);
-  const dispatch = useDispatch();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { signOut: signOutContext } = useUser();
   return (
     <header className="sticky top-0 z-40 bg-(--color-cream) backdrop-blur-sm shadow-sm">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -58,17 +58,26 @@ const Header: React.FC = () => {
               </Link>
               <button
                 onClick={async () => {
+                  if (isLoggingOut) return;
+
+                  setIsLoggingOut(true);
                   try {
-                    // Clear both redux and context/session storage
-                    dispatch(signOutAction());
-                    signOutContext();
+                    const resultAction = await dispatch(logoutUser());
+
+                    if (logoutUser.fulfilled.match(resultAction)) {
+                      toast.success("Đăng xuất thành công!");
+                      navigate("/");
+                    }
+                  } catch (error) {
+                    toast.error("Có lỗi xảy ra khi đăng xuất");
                   } finally {
-                    navigate("/");
+                    setIsLoggingOut(false);
                   }
                 }}
-                className="text-sm text-muted hidden sm:inline"
+                disabled={isLoggingOut}
+                className="text-sm text-muted hidden sm:inline hover:text-(--color-primary) disabled:opacity-50"
               >
-                Đăng xuất
+                {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
               </button>
             </>
           ) : (

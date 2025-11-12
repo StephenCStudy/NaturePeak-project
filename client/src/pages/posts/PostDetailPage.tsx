@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store";
+import {
+  fetchPropertyById,
+  clearCurrentProperty,
+  clearError,
+} from "../../store/propertySlice";
 import axios from "axios";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
@@ -18,37 +25,15 @@ import {
   HiX,
 } from "react-icons/hi";
 
-interface Property {
-  _id: string;
-  title: string;
-  description: string;
-  price: number;
-  area: number;
-  location: string;
-  type: "sale" | "rent";
-  propertyType: "house" | "apartment" | "land" | "commercial";
-  bedrooms?: number;
-  bathrooms?: number;
-  features: string[];
-  images: string[];
-  createdAt: string;
-  updatedAt: string;
-  agent: {
-    _id: string;
-    name: string;
-    phone: string;
-    email: string;
-    avatar?: string;
-  };
-  status: "available" | "sold" | "rented";
-  views: number;
-  featured?: boolean;
-}
-
 const PostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [property, setProperty] = useState<Property | null>(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    currentProperty: property,
+    loading,
+    error,
+  } = useSelector((state: RootState) => state.property);
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -62,114 +47,20 @@ const PostDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      fetchPropertyDetail(id);
+      dispatch(fetchPropertyById(id));
     }
-  }, [id]);
 
-  const fetchPropertyDetail = async (propertyId: string) => {
-    setLoading(true);
-    try {
-      // Gọi API thực tế
-      const response = await axios.get(`/api/properties/${propertyId}`);
-      const data = response.data;
+    return () => {
+      dispatch(clearCurrentProperty());
+    };
+  }, [id, dispatch]);
 
-      // Set dữ liệu từ API, giữ nguyên các field thiếu
-      setProperty({
-        _id: data._id || propertyId,
-        title: data.title || "Chưa có tiêu đề",
-        description: data.description || "",
-        price: data.price || 0,
-        area: data.area || 0,
-        location: data.location || "Chưa cập nhật",
-        type: data.type || "sale",
-        propertyType: data.propertyType || "house",
-        bedrooms: data.bedrooms,
-        bathrooms: data.bathrooms,
-        features: data.features || [],
-        images: data.images || [],
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: data.updatedAt || new Date().toISOString(),
-        agent: data.agent ||
-          data.userId || {
-            _id: "unknown",
-            name: "Chưa cập nhật",
-            phone: "Liên hệ qua hệ thống",
-            email: "Liên hệ qua hệ thống",
-          },
-        status: data.status || "available",
-        views: data.views || 0,
-        featured: data.featured || false,
-      });
-
-      console.log("Property loaded successfully:", data);
-    } catch (error: any) {
-      // Xử lý lỗi im lặng, không hiển thị toast
-      console.error("Failed to fetch property detail:", error);
-
-      // Fallback sang mock data nếu API fail
-      const mockProperty: Property = {
-        _id: propertyId,
-        title:
-          "Villa vườn tuyệt đẹp với không gian xanh mát, thiết kế hiện đại",
-        description: `Căn villa này được thiết kế theo phong cách hiện đại kết hợp với không gian xanh tự nhiên. 
-        
-Vị trí đắc địa:
-- Nằm trong khu dân cư cao cấp, an ninh tốt
-- Gần trường học quốc tế, bệnh viện
-- Kết nối thuận tiện với trung tâm thành phố
-- Môi trường trong lành, không khí sạch
-
-Thiết kế và tiện ích:
-- Kiến trúc hiện đại, thoáng mát
-- Sân vườn rộng rãi với cây xanh
-- Hệ thống điện, nước, internet đầy đủ
-- Bãi đậu xe ô tô riêng
-- Hệ thống an ninh 24/7
-
-Đây là lựa chọn hoàn hảo cho gia đình muốn sống trong không gian yên tĩnh, gần gũi với thiên nhiên nhưng vẫn đảm bảo sự tiện nghi của cuộc sống hiện đại.`,
-        price: 2500000000,
-        area: 200,
-        location: "Khu dân cư Mega Village, Thủ Đức, TP.HCM",
-        type: "sale",
-        propertyType: "house",
-        bedrooms: 4,
-        bathrooms: 3,
-        features: [
-          "Sân vườn riêng",
-          "Bãi đậu xe ô tô",
-          "Hệ thống an ninh",
-          "Điều hòa trung tâm",
-          "Bếp hiện đại",
-          "Phòng giặt riêng",
-          "Ban công view vườn",
-          "Internet cáp quang",
-        ],
-        images: [
-          "/assets/sample1.svg",
-          "/assets/sample2.svg",
-          "/assets/sample1.svg",
-          "/assets/sample2.svg",
-          "/assets/sample1.svg",
-        ],
-        createdAt: "2024-11-08",
-        updatedAt: "2024-11-08",
-        agent: {
-          _id: "agent1",
-          name: "Nguyễn Văn Minh",
-          phone: "0901234567",
-          email: "minhnv@realestate.com",
-          avatar: "/assets/avatar.svg",
-        },
-        status: "available",
-        views: 156,
-        featured: true,
-      };
-
-      setProperty(mockProperty);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (error) {
+      console.error("PostDetailPage Error:", error);
+      dispatch(clearError());
     }
-  };
+  }, [error, dispatch]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,31 +107,38 @@ Thiết kế và tiện ích:
     }
   };
 
-  const formatPrice = (price: number, type: string) => {
+  const formatPrice = (
+    price: number | undefined,
+    transactionType: "sell" | "rent"
+  ) => {
+    if (!price) return "Liên hệ";
+
     if (price >= 1000000000) {
       return `${(price / 1000000000).toFixed(1)} tỷ${
-        type === "rent" ? "/tháng" : ""
+        transactionType === "rent" ? "/tháng" : ""
       }`;
     } else if (price >= 1000000) {
       return `${(price / 1000000).toFixed(0)} triệu${
-        type === "rent" ? "/tháng" : ""
+        transactionType === "rent" ? "/tháng" : ""
       }`;
     }
-    return `${price.toLocaleString()}${type === "rent" ? "/tháng" : ""}`;
+    return `${price.toLocaleString()}${
+      transactionType === "rent" ? "/tháng" : ""
+    }`;
   };
 
   const nextImage = () => {
-    if (property?.images) {
+    if (property?.images && property.images.length > 0) {
       setCurrentImageIndex((prev) =>
-        prev === property.images.length - 1 ? 0 : prev + 1
+        prev === property.images!.length - 1 ? 0 : prev + 1
       );
     }
   };
 
   const prevImage = () => {
-    if (property?.images) {
+    if (property?.images && property.images.length > 0) {
       setCurrentImageIndex((prev) =>
-        prev === 0 ? property.images.length - 1 : prev - 1
+        prev === 0 ? property.images!.length - 1 : prev - 1
       );
     }
   };
@@ -384,7 +282,7 @@ Thiết kế và tiện ích:
                     <div className="flex items-center gap-2">
                       <HiCurrencyDollar className="w-6 h-6 text-(--color-primary)" />
                       <span className="text-2xl font-bold text-(--color-primary)">
-                        {formatPrice(property.price, property.type)}
+                        {formatPrice(property.price, property.transactionType)}
                       </span>
                     </div>
                     <div className="text-muted">{property.area} m²</div>
@@ -394,19 +292,23 @@ Thiết kế và tiện ích:
                 <div className="flex flex-col gap-2">
                   <span
                     className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      property.type === "sale"
+                      property.transactionType === "sell"
                         ? "bg-green-100 text-green-800"
                         : "bg-blue-100 text-blue-800"
                     }`}
                   >
-                    {property.type === "sale" ? "Bán" : "Cho thuê"}
+                    {property.transactionType === "sell" ? "Bán" : "Cho thuê"}
                   </span>
 
-                  {property.featured && (
-                    <span className="bg-(--color-accent) text-black px-4 py-2 rounded-full text-sm font-semibold text-center">
-                      Nổi bật
-                    </span>
-                  )}
+                  <span
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                      property.model === "flat"
+                        ? "bg-purple-100 text-purple-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {property.model === "flat" ? "Căn hộ" : "Đất nền"}
+                  </span>
                 </div>
               </div>
 
@@ -451,84 +353,89 @@ Thiết kế và tiện ích:
                   Mô tả chi tiết
                 </h3>
                 <div className="text-muted leading-relaxed whitespace-pre-line">
-                  {property.description}
+                  {property.description || "Chưa có mô tả chi tiết"}
                 </div>
               </div>
 
-              {/* Features */}
-              {property.features && property.features.length > 0 && (
-                <div>
-                  <h3 className="text-xl font-heading font-semibold text-[#083344] mb-4">
-                    Tiện ích & Đặc điểm
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {property.features.map((feature, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 p-3 bg-(--color-pastel) rounded-lg"
-                      >
-                        <div className="w-2 h-2 bg-(--color-primary) rounded-full"></div>
-                        <span className="text-sm">{feature}</span>
-                      </div>
-                    ))}
+              {/* Property Type & Status */}
+              <div>
+                <h3 className="text-xl font-heading font-semibold text-[#083344] mb-4">
+                  Thông tin bổ sung
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-(--color-cream) rounded-lg">
+                    <div className="text-sm text-muted mb-1">Loại hình</div>
+                    <div className="font-semibold text-[#083344]">
+                      {property.model === "flat"
+                        ? "Căn hộ / Nhà phố"
+                        : "Đất nền"}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-(--color-cream) rounded-lg">
+                    <div className="text-sm text-muted mb-1">Giao dịch</div>
+                    <div className="font-semibold text-[#083344]">
+                      {property.transactionType === "sell" ? "Bán" : "Cho thuê"}
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
             {/* Agent Info */}
-            <div className="bg-white rounded-2xl shadow-soft p-6 mb-6 sticky top-8">
+            <div className="bg-white rounded-2xl shadow-soft p-6 mb-6 ">
               <h3 className="text-xl font-heading font-semibold text-[#083344] mb-4">
                 Thông tin liên hệ
               </h3>
 
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">
-                  {property.agent.avatar ? (
-                    <img
-                      src={property.agent.avatar}
-                      alt={property.agent.name}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                  ) : (
-                    <HiUser className="w-8 h-8 text-(--color-primary)" />
-                  )}
-                </div>
-                <div>
-                  <div className="font-semibold text-[#083344]">
-                    {property.agent.name}
+              {property.agent ? (
+                <>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">
+                      <HiUser className="w-8 h-8 text-(--color-primary)" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-[#083344]">
+                        {property.agent.name}
+                      </div>
+                      <div className="text-sm text-muted">
+                        {property.agent.agency || "Chuyên viên tư vấn"}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-muted">Chuyên viên tư vấn</div>
+
+                  <div className="space-y-3 mb-6">
+                    <a
+                      href={`tel:${property.agent.phone}`}
+                      className="flex items-center gap-3 p-3 bg-(--color-primary) text-white rounded-lg hover:bg-(--color-primary)/90 transition-colors"
+                    >
+                      <HiPhone className="w-5 h-5" />
+                      <span>{property.agent.phone}</span>
+                    </a>
+
+                    <a
+                      href={`mailto:${property.agent.email}`}
+                      className="flex items-center gap-3 p-3 border border-(--color-primary) text-(--color-primary) rounded-lg hover:bg-(--color-primary) hover:text-white transition-colors"
+                    >
+                      <HiMail className="w-5 h-5" />
+                      <span>{property.agent.email}</span>
+                    </a>
+                  </div>
+
+                  <button
+                    onClick={() => setShowContactForm(true)}
+                    className="w-full btn-accent"
+                  >
+                    Gửi tin nhắn
+                  </button>
+                </>
+              ) : (
+                <div className="text-center text-muted py-4">
+                  <p>Thông tin liên hệ chưa được cập nhật</p>
                 </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <a
-                  href={`tel:${property.agent.phone}`}
-                  className="flex items-center gap-3 p-3 bg-(--color-primary) text-white rounded-lg hover:bg-(--color-primary)/90 transition-colors"
-                >
-                  <HiPhone className="w-5 h-5" />
-                  <span>{property.agent.phone}</span>
-                </a>
-
-                <a
-                  href={`mailto:${property.agent.email}`}
-                  className="flex items-center gap-3 p-3 border border-(--color-primary) text-(--color-primary) rounded-lg hover:bg-(--color-primary) hover:text-white transition-colors"
-                >
-                  <HiMail className="w-5 h-5" />
-                  <span>{property.agent.email}</span>
-                </a>
-              </div>
-
-              <button
-                onClick={() => setShowContactForm(true)}
-                className="w-full btn-accent"
-              >
-                Gửi tin nhắn
-              </button>
+              )}
             </div>
 
             {/* Property Stats */}
@@ -541,27 +448,9 @@ Thiết kế và tiện ích:
                 <div className="flex items-center justify-between">
                   <span className="text-muted">Ngày đăng:</span>
                   <span className="font-medium">
-                    {new Date(property.createdAt).toLocaleDateString("vi-VN")}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-muted">Cập nhật:</span>
-                  <span className="font-medium">
-                    {new Date(property.updatedAt).toLocaleDateString("vi-VN")}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-muted">Trạng thái:</span>
-                  <span
-                    className={`font-medium ${
-                      property.status === "available"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {property.status === "available" ? "Có sẵn" : "Đã bán/thuê"}
+                    {property.createdAt
+                      ? new Date(property.createdAt).toLocaleDateString("vi-VN")
+                      : "Chưa cập nhật"}
                   </span>
                 </div>
 
@@ -569,7 +458,7 @@ Thiết kế và tiện ích:
                   <span className="text-muted">Lượt xem:</span>
                   <div className="flex items-center gap-1">
                     <HiEye className="w-4 h-4 text-(--color-primary)" />
-                    <span className="font-medium">{property.views}</span>
+                    <span className="font-medium">{property.views || 0}</span>
                   </div>
                 </div>
               </div>

@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { HiTrash, HiChevronLeft, HiSave } from "react-icons/hi";
 import { toast } from "react-toastify";
+import { useUser } from "../../context/UserContext";
+import type { AppDispatch, RootState } from "../../store";
+import {
+  createProperty,
+  updateProperty,
+  fetchPropertyById,
+  clearCurrentProperty,
+} from "../../store/propertySlice";
+import { uploadToCloudinary } from "../../utils/cores/upload_image.cloudinary";
+import axios from "axios";
 
 interface PropertyFormData {
   title: string;
@@ -10,8 +21,8 @@ interface PropertyFormData {
   price: string;
   area: string;
   location: string;
-  type: "sale" | "rent";
-  propertyType: "house" | "apartment" | "land" | "commercial";
+  transactionType: "sell" | "rent";
+  model: "flat" | "land";
   bedrooms: string;
   bathrooms: string;
   features: string[];
@@ -26,8 +37,12 @@ interface PropertyFormData {
 const EditPostPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, token } = useUser();
+  const { currentProperty } = useSelector((state: RootState) => state.property);
+  const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PropertyFormData>({
     title: "",
@@ -35,8 +50,8 @@ const EditPostPage: React.FC = () => {
     price: "",
     area: "",
     location: "",
-    type: "sale",
-    propertyType: "house",
+    transactionType: "sell",
+    model: "flat",
     bedrooms: "",
     bathrooms: "",
     features: [],
@@ -47,6 +62,7 @@ const EditPostPage: React.FC = () => {
       email: "",
     },
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const availableFeatures = [
     "Sân vườn",
@@ -65,46 +81,97 @@ const EditPostPage: React.FC = () => {
     "Yên tĩnh",
   ];
 
+  const isEditMode = !!id;
+
+  // Load user data into contact form when not in edit mode
+  useEffect(() => {
+    if (!isEditMode && user) {
+      setFormData((prev) => ({
+        ...prev,
+        contact: {
+          name: user.name || "",
+          phone: "",
+          email: user.email || "",
+        },
+      }));
+    }
+  }, [isEditMode, user]);
+
   useEffect(() => {
     if (id) {
       fetchPropertyData(id);
     }
-  }, [id]);
+    return () => {
+      dispatch(clearCurrentProperty());
+    };
+  }, [id, dispatch]);
 
-  const fetchPropertyData = async (_propertyId: string) => {
-    setLoading(true);
-    try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Load property data when currentProperty changes
+  useEffect(() => {
+    if (currentProperty && id) {
+      const featuresArray =
+        typeof currentProperty.description === "string"
+          ? extractFeaturesFromDescription(currentProperty.description)
+          : [];
 
-      // Mock existing data
-      const mockData: PropertyFormData = {
-        title: "Villa vườn tuyệt đẹp với không gian xanh mát",
-        description:
-          "Căn villa được thiết kế hiện đại với sân vườn rộng rãi, không gian xanh mát. Vị trí đắc địa, gần trường học và bệnh viện.",
-        price: "2500000000",
-        area: "200",
-        location: "Thủ Đức, TP.HCM",
-        type: "sale",
-        propertyType: "house",
-        bedrooms: "4",
-        bathrooms: "3",
-        features: ["Sân vườn", "Bãi đậu xe", "Điều hòa", "Bảo vệ 24/7"],
-        images: ["/assets/sample1.svg", "/assets/sample2.svg"],
+      const descriptionWithoutFeatures =
+        typeof currentProperty.description === "string"
+          ? removeFeaturesFromDescription(currentProperty.description)
+          : "";
+
+      setFormData({
+        title: currentProperty.title || "",
+        description: descriptionWithoutFeatures,
+        price: currentProperty.price?.toString() || "",
+        area: currentProperty.area?.toString() || "",
+        location: currentProperty.location || "",
+        transactionType: currentProperty.transactionType || "sell",
+        model: currentProperty.model || "flat",
+        bedrooms: currentProperty.bedrooms?.toString() || "",
+        bathrooms: currentProperty.bathrooms?.toString() || "",
+        features: featuresArray,
+        images: currentProperty.images || [],
         contact: {
-          name: "Nguyễn Văn A",
-          phone: "0901234567",
-          email: "nguyena@example.com",
+          name: currentProperty.agent?.name || "",
+          phone: currentProperty.agent?.phone || "",
+          email: currentProperty.agent?.email || "",
         },
-      };
-
-      setFormData(mockData);
-    } catch (error) {
-      toast.error("Không thể tải dữ liệu tin đăng");
-      navigate("/my-posts");
-    } finally {
+      });
       setLoading(false);
     }
+  }, [currentProperty, id]);
+
+  const fetchPropertyData = async (propertyId: string) => {
+    try {
+      await dispatch(fetchPropertyById(propertyId)).unwrap();
+    } catch (error: any) {
+      toast.error(error || "Không thể tải dữ liệu tin đăng");
+      navigate("/my-posts");
+    }
+  };
+
+  // Helper functions to handle features in description
+  const extractFeaturesFromDescription = (desc: string): string[] => {
+    const match = desc.match(/\[FEATURES\](.*?)\[\/FEATURES\]/s);
+    if (match && match[1]) {
+      return match[1]
+        .split(",")
+        .map((f) => f.trim())
+        .filter((f) => f);
+    }
+    return [];
+  };
+
+  const removeFeaturesFromDescription = (desc: string): string => {
+    return desc.replace(/\[FEATURES\].*?\[\/FEATURES\]/s, "").trim();
+  };
+
+  const combineDescriptionWithFeatures = (
+    desc: string,
+    features: string[]
+  ): string => {
+    if (features.length === 0) return desc;
+    return `${desc}\n\n[FEATURES]${features.join(", ")}[/FEATURES]`;
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -128,21 +195,44 @@ const EditPostPage: React.FC = () => {
     }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      // Mock image upload - replace with real upload logic
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const imageUrl = event.target?.result as string;
-          setFormData((prev) => ({
-            ...prev,
-            images: [...prev.images, imageUrl],
-          }));
-        };
-        reader.readAsDataURL(file);
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    const toastId = toast.loading(`Đang tải lên ${files.length} ảnh...`);
+
+    try {
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadToCloudinary(file)
+      );
+      const uploadedUrls = await Promise.all(uploadPromises);
+
+      const validUrls = uploadedUrls.filter((url): url is string => !!url);
+
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...validUrls],
+      }));
+
+      toast.update(toastId, {
+        render: `Tải lên thành công ${validUrls.length} ảnh!`,
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
       });
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.update(toastId, {
+        render: error.message || "Không thể tải ảnh lên",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } finally {
+      setUploadingImages(false);
+      // Reset input
+      e.target.value = "";
     }
   };
 
@@ -153,34 +243,153 @@ const EditPostPage: React.FC = () => {
     }));
   };
 
+  const validateStep1 = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = "Vui lòng nhập tiêu đề tin đăng";
+    }
+    if (!formData.price || Number(formData.price) <= 0) {
+      newErrors.price = "Vui lòng nhập giá hợp lệ";
+    }
+    if (!formData.area || Number(formData.area) <= 0) {
+      newErrors.area = "Vui lòng nhập diện tích hợp lệ";
+    }
+    if (!formData.location.trim()) {
+      newErrors.location = "Vui lòng nhập địa điểm";
+    }
+    if (!formData.transactionType) {
+      newErrors.transactionType = "Vui lòng chọn loại giao dịch";
+    }
+    if (!formData.model) {
+      newErrors.model = "Vui lòng chọn loại hình bất động sản";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      return false;
+    }
+    return true;
+  };
+  const validateStep3 = (): boolean => {
+    if (formData.images.length === 0) {
+      toast.error("Vui lòng tải lên ít nhất 1 hình ảnh");
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+      if (validateStep1()) {
+        setCurrentStep(2);
+      }
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      if (validateStep3()) {
+        setCurrentStep(4);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (
-      !formData.title ||
-      !formData.price ||
-      !formData.area ||
-      !formData.location
-    ) {
-      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+    // Final validation
+    if (!validateStep1()) {
+      setCurrentStep(1);
+      return;
+    }
+
+    if (formData.images.length === 0) {
+      toast.error("Vui lòng tải lên ít nhất 1 hình ảnh");
+      setCurrentStep(3);
       return;
     }
 
     if (!formData.contact.name || !formData.contact.phone) {
       toast.error("Vui lòng điền đầy đủ thông tin liên hệ");
+      setCurrentStep(4);
       return;
     }
 
     setSaving(true);
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Step 1: Create or update agent
+      let agentId: string | undefined;
 
-      toast.success("Cập nhật tin đăng thành công!");
+      if (isEditMode && currentProperty?.agent?._id) {
+        // Update existing agent
+        await axios.put(
+          `/api/agents/${currentProperty.agent._id}`,
+          {
+            name: formData.contact.name,
+            phone: formData.contact.phone,
+            email: formData.contact.email,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        agentId = currentProperty.agent._id;
+      } else {
+        // Create new agent
+        const agentResponse = await axios.post(
+          "/api/agents",
+          {
+            name: formData.contact.name,
+            phone: formData.contact.phone,
+            email: formData.contact.email,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        agentId = agentResponse.data._id;
+      }
+
+      // Step 2: Prepare property data with features embedded in description
+      const fullDescription = combineDescriptionWithFeatures(
+        formData.description,
+        formData.features
+      );
+
+      const propertyData: any = {
+        title: formData.title,
+        description: fullDescription,
+        price: Number(formData.price),
+        area: Number(formData.area),
+        location: formData.location,
+        transactionType: formData.transactionType,
+        model: formData.model,
+        bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
+        bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
+        images: formData.images,
+        agent: agentId,
+      };
+
+      // Step 3: Create or update property
+      if (isEditMode && id) {
+        await dispatch(updateProperty({ id, data: propertyData })).unwrap();
+        toast.success("Cập nhật tin đăng thành công!");
+      } else {
+        await dispatch(createProperty(propertyData)).unwrap();
+        toast.success("Đăng tin thành công!");
+      }
+
       navigate("/my-posts");
-    } catch (error) {
-      toast.error("Không thể cập nhật tin đăng");
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      const errorMessage =
+        error.message || error || "Có lỗi xảy ra khi lưu tin đăng";
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -211,17 +420,21 @@ const EditPostPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate("/my-posts")}
+            onClick={() => navigate(isEditMode ? "/my-posts" : "/")}
             className="text-(--color-primary) hover:text-(--color-primary)/80 flex items-center gap-2 mb-4 transition-colors"
           >
             <HiChevronLeft className="w-5 h-5" />
-            Quay lại tin đăng của tôi
+            {isEditMode ? "Quay lại tin đăng của tôi" : "Quay lại trang chủ"}
           </button>
 
           <h1 className="text-3xl font-heading font-bold text-[#083344] mb-2">
-            Chỉnh sửa tin đăng
+            {isEditMode ? "Chỉnh sửa tin đăng" : "Đăng tin"}
           </h1>
-          <p className="text-muted">Cập nhật thông tin bất động sản của bạn</p>
+          <p className="text-muted">
+            {isEditMode
+              ? "Cập nhật thông tin bất động sản của bạn"
+              : "Đăng tin miễn phí - Tiếp cận người mua và người thuê tiềm năng"}
+          </p>
         </div>
 
         {/* Progress Steps */}
@@ -279,11 +492,22 @@ const EditPostPage: React.FC = () => {
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20 outline-none transition-all"
+                    onChange={(e) => {
+                      handleInputChange("title", e.target.value);
+                      if (errors.title) {
+                        setErrors((prev) => ({ ...prev, title: "" }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-all ${
+                      errors.title
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-200 focus:border-(--color-primary) focus:ring-(--color-primary)/20"
+                    }`}
                     placeholder="Nhập tiêu đề hấp dẫn cho tin đăng"
-                    required
                   />
+                  {errors.title && (
+                    <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                  )}
                 </div>
 
                 <div>
@@ -291,14 +515,27 @@ const EditPostPage: React.FC = () => {
                     Loại giao dịch *
                   </label>
                   <select
-                    value={formData.type}
-                    onChange={(e) => handleInputChange("type", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-(--color-primary) outline-none"
-                    required
+                    value={formData.transactionType}
+                    onChange={(e) => {
+                      handleInputChange("transactionType", e.target.value);
+                      if (errors.transactionType) {
+                        setErrors((prev) => ({ ...prev, transactionType: "" }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg outline-none ${
+                      errors.transactionType
+                        ? "border-red-500"
+                        : "border-gray-200"
+                    }`}
                   >
-                    <option value="sale">Bán</option>
+                    <option value="sell">Bán</option>
                     <option value="rent">Cho thuê</option>
                   </select>
+                  {errors.transactionType && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.transactionType}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -306,32 +543,52 @@ const EditPostPage: React.FC = () => {
                     Loại hình bất động sản *
                   </label>
                   <select
-                    value={formData.propertyType}
-                    onChange={(e) =>
-                      handleInputChange("propertyType", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-(--color-primary) outline-none"
-                    required
+                    value={formData.model}
+                    onChange={(e) => {
+                      handleInputChange("model", e.target.value);
+                      if (errors.model) {
+                        setErrors((prev) => ({ ...prev, model: "" }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg outline-none ${
+                      errors.model ? "border-red-500" : "border-gray-200"
+                    }`}
                   >
-                    <option value="house">Nhà ở</option>
-                    <option value="apartment">Căn hộ</option>
+                    <option value="flat">Căn hộ / Nhà phố</option>
                     <option value="land">Đất nền</option>
-                    <option value="commercial">Thương mại</option>
                   </select>
+                  {errors.model && (
+                    <p className="text-red-500 text-sm mt-1">{errors.model}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#083344] mb-2">
-                    Giá {formData.type === "rent" ? "(VNĐ/tháng)" : "(VNĐ)"} *
+                    Giá{" "}
+                    {formData.transactionType === "rent"
+                      ? "(VNĐ/tháng)"
+                      : "(VNĐ)"}{" "}
+                    *
                   </label>
                   <input
                     type="number"
                     value={formData.price}
-                    onChange={(e) => handleInputChange("price", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20 outline-none transition-all"
+                    onChange={(e) => {
+                      handleInputChange("price", e.target.value);
+                      if (errors.price) {
+                        setErrors((prev) => ({ ...prev, price: "" }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-all ${
+                      errors.price
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-200 focus:border-(--color-primary) focus:ring-(--color-primary)/20"
+                    }`}
                     placeholder="Nhập giá bất động sản"
-                    required
                   />
+                  {errors.price && (
+                    <p className="text-red-500 text-sm mt-1">{errors.price}</p>
+                  )}
                 </div>
 
                 <div>
@@ -341,11 +598,22 @@ const EditPostPage: React.FC = () => {
                   <input
                     type="number"
                     value={formData.area}
-                    onChange={(e) => handleInputChange("area", e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20 outline-none transition-all"
+                    onChange={(e) => {
+                      handleInputChange("area", e.target.value);
+                      if (errors.area) {
+                        setErrors((prev) => ({ ...prev, area: "" }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-all ${
+                      errors.area
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-200 focus:border-(--color-primary) focus:ring-(--color-primary)/20"
+                    }`}
                     placeholder="Nhập diện tích"
-                    required
                   />
+                  {errors.area && (
+                    <p className="text-red-500 text-sm mt-1">{errors.area}</p>
+                  )}
                 </div>
 
                 <div className="lg:col-span-2">
@@ -355,17 +623,27 @@ const EditPostPage: React.FC = () => {
                   <input
                     type="text"
                     value={formData.location}
-                    onChange={(e) =>
-                      handleInputChange("location", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20 outline-none transition-all"
+                    onChange={(e) => {
+                      handleInputChange("location", e.target.value);
+                      if (errors.location) {
+                        setErrors((prev) => ({ ...prev, location: "" }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-all ${
+                      errors.location
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                        : "border-gray-200 focus:border-(--color-primary) focus:ring-(--color-primary)/20"
+                    }`}
                     placeholder="Nhập địa chỉ chi tiết"
-                    required
                   />
+                  {errors.location && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.location}
+                    </p>
+                  )}
                 </div>
 
-                {(formData.propertyType === "house" ||
-                  formData.propertyType === "apartment") && (
+                {formData.model === "flat" && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-[#083344] mb-2">
@@ -403,7 +681,7 @@ const EditPostPage: React.FC = () => {
               <div className="flex justify-end mt-8">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(2)}
+                  onClick={handleNextStep}
                   className="btn-primary"
                 >
                   Tiếp theo
@@ -472,7 +750,7 @@ const EditPostPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(3)}
+                  onClick={handleNextStep}
                   className="btn-primary"
                 >
                   Tiếp theo
@@ -498,28 +776,45 @@ const EditPostPage: React.FC = () => {
                     onChange={handleImageUpload}
                     className="hidden"
                     id="image-upload"
+                    disabled={uploadingImages}
                   />
-                  <label htmlFor="image-upload" className="cursor-pointer">
-                    <svg
-                      className="w-16 h-16 text-gray-400 mx-auto mb-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <p className="text-lg font-medium text-[#083344] mb-2">
-                      Thêm hình ảnh
-                    </p>
-                    <p className="text-muted">
-                      Chọn nhiều ảnh để tăng độ tin cậy. Kích thước tối đa
-                      5MB/ảnh
-                    </p>
+                  <label
+                    htmlFor="image-upload"
+                    className={`cursor-pointer ${
+                      uploadingImages ? "opacity-50" : ""
+                    }`}
+                  >
+                    {uploadingImages ? (
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 border-4 border-gray-200 border-t-(--color-primary) rounded-full animate-spin mb-4"></div>
+                        <p className="text-lg font-medium text-(--color-primary) mb-2">
+                          Đang tải ảnh lên...
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <p className="text-lg font-medium text-[#083344] mb-2">
+                          Thêm hình ảnh
+                        </p>
+                        <p className="text-muted">
+                          Chọn nhiều ảnh để tăng độ tin cậy. Kích thước tối đa
+                          5MB/ảnh
+                        </p>
+                      </>
+                    )}
                   </label>
                 </div>
 
@@ -563,7 +858,7 @@ const EditPostPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(4)}
+                  onClick={handleNextStep}
                   className="btn-primary"
                 >
                   Tiếp theo
@@ -644,12 +939,12 @@ const EditPostPage: React.FC = () => {
                   {saving ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Đang cập nhật...
+                      {isEditMode ? "Đang cập nhật..." : "Đang đăng tin..."}
                     </>
                   ) : (
                     <>
                       <HiSave className="w-5 h-5" />
-                      Cập nhật tin đăng
+                      {isEditMode ? "Cập nhật tin đăng" : "Đăng tin"}
                     </>
                   )}
                 </button>
@@ -663,4 +958,3 @@ const EditPostPage: React.FC = () => {
 };
 
 export default EditPostPage;
-

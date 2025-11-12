@@ -4,32 +4,16 @@ import { useDispatch, useSelector } from "react-redux";
 import HeroSearch from "../../components/HeroSearch";
 import PropertyCard from "../../components/PropertyCard";
 import type { AppDispatch, RootState } from "../../store";
-import {
-  fetchProperties,
-  clearMessage,
-  clearError,
-} from "../../store/homeSlice";
+import { fetchProperties, clearError } from "../../store/propertySlice";
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { properties, loading, error, message } = useSelector(
-    (state: RootState) => state.home
+  const { properties, loading, error } = useSelector(
+    (state: RootState) => state.property
   );
 
-  // Xử lý lỗi và message một cách im lặng
-  useEffect(() => {
-    try {
-      if (message) {
-        // Log thông báo thay vì hiển thị toast
-        console.log("HomePage Message:", message);
-        dispatch(clearMessage());
-      }
-    } catch (err) {
-      console.error("Error clearing message:", err);
-    }
-  }, [message, dispatch]);
-
+  // Xử lý lỗi một cách im lặng
   useEffect(() => {
     try {
       if (error) {
@@ -106,7 +90,7 @@ const HomePage: React.FC = () => {
 
           {/* Properties Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {properties.map((p) => (
+            {properties.slice(0, 8).map((p) => (
               <PropertyCard
                 key={p._id}
                 title={p.title}
