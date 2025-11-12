@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store";
 import {
@@ -7,8 +7,9 @@ import {
   clearCurrentProperty,
   clearError,
 } from "../../store/propertySlice";
-import axios from "axios";
+import api from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import { toast } from "react-toastify";
 import {
   HiLocationMarker,
   HiHome,
@@ -27,6 +28,7 @@ import {
 
 const PostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const {
     currentProperty: property,
@@ -34,24 +36,26 @@ const PostDetailPage: React.FC = () => {
     error,
   } = useSelector((state: RootState) => state.property);
 
+  const { user } = useSelector((state: RootState) => state.auth);
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactForm, setContactForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
     message: "",
   });
+  const hasFetched = React.useRef(false);
 
   useEffect(() => {
-    if (id) {
+    if (id && !hasFetched.current) {
+      hasFetched.current = true;
       dispatch(fetchPropertyById(id));
     }
 
     return () => {
       dispatch(clearCurrentProperty());
+      hasFetched.current = false;
     };
   }, [id, dispatch]);
 
@@ -65,23 +69,36 @@ const PostDetailPage: React.FC = () => {
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!contactForm.name || !contactForm.phone || !contactForm.message) {
-      console.error("Form validation failed: Missing required fields");
+    // Kiểm tra đăng nhập
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để gửi tin nhắn");
+      navigate("/login");
+      return;
+    }
+
+    if (!contactForm.message.trim()) {
+      toast.error("Vui lòng nhập nội dung tin nhắn");
       return;
     }
 
     try {
-      // Gọi API gửi thông tin liên hệ
-      await axios.post("/api/contact", {
+      // Gọi API gửi tin nhắn (backend sẽ lấy thông tin từ user đang đăng nhập)
+      await api.post("/messages", {
         propertyId: property?._id,
-        ...contactForm,
+        message: contactForm.message,
       });
 
-      console.log("Contact form submitted successfully");
+      toast.success(
+        "Gửi tin nhắn thành công! Chủ bất động sản sẽ liên hệ với bạn sớm."
+      );
       setShowContactForm(false);
-      setContactForm({ name: "", phone: "", email: "", message: "" });
-    } catch (error) {
-      console.error("Failed to send contact form:", error);
+      setContactForm({ message: "" });
+    } catch (error: any) {
+      console.error("Failed to send message:", error);
+      const errorMsg =
+        error.response?.data?.message ||
+        "Gửi tin nhắn thất bại. Vui lòng thử lại.";
+      toast.error(errorMsg);
     }
   };
 
@@ -609,67 +626,29 @@ const PostDetailPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleContactSubmit} className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Họ và tên *"
-                  value={contactForm.name}
-                  onChange={(e) =>
-                    setContactForm((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <input
-                  type="tel"
-                  placeholder="Số điện thoại *"
-                  value={contactForm.phone}
-                  onChange={(e) =>
-                    setContactForm((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={contactForm.email}
-                  onChange={(e) =>
-                    setContactForm((prev) => ({
-                      ...prev,
-                      email: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none"
-                />
-              </div>
+              {user && (
+                <div className="p-4 bg-(--color-pastel) rounded-lg">
+                  <p className="text-sm text-[#083344]">
+                    <strong>Gửi từ:</strong> {user.name} ({user.email})
+                  </p>
+                  <p className="text-xs text-muted mt-1">
+                    Thông tin của bạn sẽ được gửi kèm tin nhắn
+                  </p>
+                </div>
+              )}
 
               <div>
                 <textarea
-                  placeholder="Nội dung tin nhắn *"
-                  rows={4}
+                  placeholder="Nhập nội dung tin nhắn... *"
+                  rows={6}
                   value={contactForm.message}
-                  onChange={(e) =>
-                    setContactForm((prev) => ({
-                      ...prev,
-                      message: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setContactForm({ message: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-(--color-primary) outline-none resize-none"
                   required
                 />
+                <p className="text-xs text-muted mt-1">
+                  {contactForm.message.length} / 500 ký tự
+                </p>
               </div>
 
               <div className="flex gap-3 pt-2">
