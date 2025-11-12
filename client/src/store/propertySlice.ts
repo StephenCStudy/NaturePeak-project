@@ -26,6 +26,10 @@ export type Property = {
   status: "active" | "hidden";
   createdAt?: string;
   waitingStatus: "waiting" | "reviewed" | "block";
+  amenities?: string[]; // tiện ích xung quanh
+  contactName?: string; // tên người liên hệ
+  contactPhone?: string; // số điện thoại liên hệ
+  contactEmail?: string; // email liên hệ
 };
 
 // State interface

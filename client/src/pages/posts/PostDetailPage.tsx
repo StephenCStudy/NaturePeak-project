@@ -290,6 +290,32 @@ const PostDetailPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
+                  {/* Badge Tin mới hoặc Tin nổi bật */}
+                  {(() => {
+                    const isNew =
+                      property.createdAt &&
+                      (new Date().getTime() -
+                        new Date(property.createdAt).getTime()) /
+                        (1000 * 60 * 60 * 24) <=
+                        7;
+                    const isPopular = (property.views || 0) > 100;
+
+                    if (isNew) {
+                      return (
+                        <span className="px-4 py-2 rounded-full text-sm font-semibold bg-red-100 text-red-800 animate-pulse">
+                          ⭐ Tin mới
+                        </span>
+                      );
+                    } else if (isPopular) {
+                      return (
+                        <span className="px-4 py-2 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800">
+                          🔥 Tin nổi bật
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+
                   <span
                     className={`px-4 py-2 rounded-full text-sm font-semibold ${
                       property.transactionType === "sell"
@@ -362,7 +388,7 @@ const PostDetailPage: React.FC = () => {
                 <h3 className="text-xl font-heading font-semibold text-[#083344] mb-4">
                   Thông tin bổ sung
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-4 bg-(--color-cream) rounded-lg">
                     <div className="text-sm text-muted mb-1">Loại hình</div>
                     <div className="font-semibold text-[#083344]">
@@ -378,19 +404,81 @@ const PostDetailPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Amenities */}
+                {property.amenities && property.amenities.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#083344] mb-3">
+                      Tiện ích xung quanh
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {property.amenities.map(
+                        (amenity: string, index: number) => (
+                          <span
+                            key={index}
+                            className="px-3 py-2 bg-(--color-pastel) text-(--color-primary) rounded-lg text-sm font-medium"
+                          >
+                            ✓ {amenity}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            {/* Agent Info */}
+            {/* Contact Info */}
             <div className="bg-white rounded-2xl shadow-soft p-6 mb-6 ">
               <h3 className="text-xl font-heading font-semibold text-[#083344] mb-4">
                 Thông tin liên hệ
               </h3>
 
-              {property.agent ? (
+              {property.contactName && property.contactPhone ? (
+                <>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">
+                      <HiUser className="w-8 h-8 text-(--color-primary)" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-[#083344]">
+                        {property.contactName}
+                      </div>
+                      <div className="text-sm text-muted">Người liên hệ</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <a
+                      href={`tel:${property.contactPhone}`}
+                      className="flex items-center gap-3 p-3 bg-(--color-primary) text-white rounded-lg hover:bg-(--color-primary)/90 transition-colors"
+                    >
+                      <HiPhone className="w-5 h-5" />
+                      <span>{property.contactPhone}</span>
+                    </a>
+
+                    {property.contactEmail && (
+                      <a
+                        href={`mailto:${property.contactEmail}`}
+                        className="flex items-center gap-3 p-3 border border-(--color-primary) text-(--color-primary) rounded-lg hover:bg-(--color-primary) hover:text-white transition-colors"
+                      >
+                        <HiMail className="w-5 h-5" />
+                        <span>{property.contactEmail}</span>
+                      </a>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setShowContactForm(true)}
+                    className="w-full btn-accent"
+                  >
+                    Gửi tin nhắn
+                  </button>
+                </>
+              ) : property.agent ? (
                 <>
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">

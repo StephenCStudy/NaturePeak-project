@@ -98,6 +98,8 @@ const HomePage: React.FC = () => {
                 area={p.area}
                 location={p.location}
                 image={p.images && p.images[0]}
+                views={p.views}
+                createdAt={p.createdAt}
                 onView={() => handleViewDetail(p._id)}
               />
             ))}

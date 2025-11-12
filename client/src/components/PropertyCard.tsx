@@ -7,6 +7,8 @@ type Props = {
   area?: number | string;
   location?: string;
   image?: string;
+  views?: number;
+  createdAt?: string;
   onView?: () => void;
 };
 
@@ -16,8 +18,19 @@ const PropertyCard: React.FC<Props> = ({
   area,
   location,
   image,
+  views,
+  createdAt,
   onView,
 }) => {
+  // Xác định xem có phải tin mới (đăng trong vòng 7 ngày)
+  const isNew =
+    createdAt &&
+    (new Date().getTime() - new Date(createdAt).getTime()) /
+      (1000 * 60 * 60 * 24) <=
+      7;
+
+  // Xác định xem có phải tin nổi bật (views > 100)
+  const isPopular = (views || 0) > 100;
   return (
     <article className="group bg-white rounded-2xl shadow-soft overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border border-gray-50">
       <div className="h-56 bg-linear-to-br from-(--color-pastel) to-(--color-cream) relative overflow-hidden">
@@ -51,11 +64,19 @@ const PropertyCard: React.FC<Props> = ({
         )}
 
         {/* Overlay with status badge */}
-        <div className="absolute top-3 right-3">
-          <span className="bg-(--color-accent) text-black text-xs px-3 py-1 rounded-full font-semibold shadow-lg">
-            Nổi bật
-          </span>
-        </div>
+        {(isNew || isPopular) && (
+          <div className="absolute top-3 right-3">
+            {isNew ? (
+              <span className="bg-red-500 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-lg animate-pulse">
+                ⭐ Tin mới
+              </span>
+            ) : isPopular ? (
+              <span className="bg-(--color-accent) text-black text-xs px-3 py-1 rounded-full font-semibold shadow-lg">
+                🔥 Tin nổi bật
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className="p-6 flex-1 flex flex-col justify-between">

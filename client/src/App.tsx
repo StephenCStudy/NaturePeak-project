@@ -19,6 +19,7 @@ import ProfilePage from "./pages/user/ProfilePage";
 import EditProfilePage from "./pages/user/EditProfilePage";
 import ChangePasswordPage from "./pages/user/ChangePasswordPage";
 import MyPostsPage from "./pages/user/MyPostsPage";
+import AddPostPage from "./pages/posts/AddPostPage";
 import EditPostPage from "./pages/posts/EditPostPage";
 import AdminPage from "./pages/admin/AdminPage";
 import { useDispatch, useSelector } from "react-redux";
@@ -57,7 +58,7 @@ const App: React.FC = () => {
               path="/add-post"
               element={
                 <ProtectedRoute>
-                  <EditPostPage />
+                  <AddPostPage />
                 </ProtectedRoute>
               }
             />
