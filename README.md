@@ -19,27 +19,16 @@ NaturePeak is a sample full-stack real estate listing application built with Rea
 1. Start the backend
 
    ```powershell
-   cd backend
+   cd api
    npm run dev
    ```
 
 2. Start the frontend
 
    ```powershell
-   cd frontend
+   cd client
    npm run dev
    ```
-
-Note: In this workspace the canonical backend implementation is in the `api/` folder and the frontend is in the `client/` folder. If you prefer, run the dev scripts there instead:
-
-```powershell
-# alternative (if using the provided folders)
-cd api
-npm run dev
-
-cd ..\client
-npm run dev
-```
 
 Make sure to create a `.env` file for the backend with at least the following variables:
 
