@@ -1,4 +1,5 @@
 import Property from "../../models/Property.js";
+import Agent from "../../models/Agent.js"; // Import Agent model để register schema
 import { Request, Response } from "express";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 
