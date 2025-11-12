@@ -7,6 +7,16 @@ const router = express.Router();
 
 router.get("/", controllers.UserController.getUsers);
 router.post("/", controllers.UserController.createUser);
+router.put(
+  "/profile/me",
+  authenticate,
+  controllers.UserController.updateProfile
+); // Must be before /:id
+router.put(
+  "/password/change",
+  authenticate,
+  controllers.UserController.changePassword
+);
 router.put("/:id", authenticate, controllers.UserController.updateUser);
 
 export default router;

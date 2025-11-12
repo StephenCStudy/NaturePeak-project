@@ -26,6 +26,10 @@ export type Property = {
   status: "active" | "hidden";
   createdAt?: string;
   waitingStatus: "waiting" | "reviewed" | "block";
+  amenities?: string[]; // tiện ích xung quanh
+  contactName?: string; // tên người liên hệ
+  contactPhone?: string; // số điện thoại liên hệ
+  contactEmail?: string; // email liên hệ
 };
 
 // State interface
@@ -51,13 +55,21 @@ export const fetchProperties = createAsyncThunk(
   "property/fetchProperties",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("/api/properties");
+      const response = await axios.get("/api/properties", {
+        params: {
+          page: 1,
+          limit: 1000, // Lấy tất cả properties cho homepage
+        },
+      });
 
-      if (!Array.isArray(response.data)) {
+      // Backend trả về paginated response: { properties: [], pagination: {} }
+      const properties = response.data.properties || response.data;
+
+      if (!Array.isArray(properties)) {
         throw new Error("Dữ liệu trả về không đúng định dạng");
       }
 
-      return response.data as Property[];
+      return properties as Property[];
     } catch (error: any) {
       console.error("fetchProperties error:", error);
       const errorMessage =

@@ -3,6 +3,7 @@ import connectDB from "../config/db.js";
 import Agent from "../models/Agent.js";
 import Property from "../models/Property.js";
 import User from "../models/User.js";
+import Message from "../models/Message.js";
 import bcrypt from "bcryptjs";
 
 dotenv.config();
@@ -12,6 +13,7 @@ const seed = async () => {
   await Agent.deleteMany({});
   await Property.deleteMany({});
   await User.deleteMany({});
+  await Message.deleteMany({});
 
   const agents = await Agent.create([
     {
@@ -142,6 +144,17 @@ Pháp lý rõ ràng, sổ hồng chính chủ.`,
       waitingStatus: "reviewed",
       views: 245,
       createdAt: new Date("2025-01-15"),
+      amenities: [
+        "Gần trường học",
+        "Gần bệnh viện",
+        "An ninh 24/7",
+        "Hồ bơi",
+        "Phòng gym",
+        "Thang máy",
+      ],
+      contactName: "Nguyễn Văn A",
+      contactPhone: "0987654321",
+      contactEmail: "nva@example.com",
     },
     {
       title: "Nhà phố sang trọng mặt tiền đường lớn",
@@ -256,6 +269,10 @@ Giá đầu tư hấp dẫn, tiềm năng sinh lời cao.`,
       waitingStatus: "waiting",
       views: 342,
       createdAt: new Date("2025-02-15"),
+      amenities: ["Gần chợ/siêu thị", "Gần trường học", "Khu dân cư văn minh"],
+      contactName: "Trần Văn B",
+      contactPhone: "0912345678",
+      contactEmail: "tvb@example.com",
     },
     {
       title: "Chung cư cao cấp cho thuê full nội thất",
@@ -344,6 +361,57 @@ Thanh toán linh hoạt, hỗ trợ vay ngân hàng 70%.`,
       createdAt: new Date("2025-03-05"),
     },
   ]);
+
+  // Tạo tin nhắn mẫu
+  const properties = await Property.find({ userId: users[0]?._id }).limit(3);
+
+  if (properties.length >= 3) {
+    await Message.create([
+      {
+        propertyId: properties[0]!._id,
+        senderName: "Nguyễn Văn B",
+        senderPhone: "0912345678",
+        senderEmail: "nguyenvanb@example.com",
+        message:
+          "Tôi rất quan tâm đến bất động sản này. Có thể xem trực tiếp vào cuối tuần được không? Xin cảm ơn!",
+        recipientUserId: users[0]?._id,
+        isRead: false,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 giờ trước
+      },
+      {
+        propertyId: properties[1]!._id,
+        senderName: "Trần Thị C",
+        senderPhone: "0908765432",
+        senderEmail: "tranthic@gmail.com",
+        message:
+          "Căn hộ này còn không ạ? Giá có thể thương lượng được không? Tôi muốn xem chi tiết hơn về pháp lý.",
+        recipientUserId: users[0]?._id,
+        isRead: false,
+        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 giờ trước
+      },
+      {
+        propertyId: properties[0]!._id,
+        senderName: "Lê Minh D",
+        senderPhone: "0909876543",
+        message:
+          "Cho tôi hỏi khu vực này có gần trường học không? Gia đình tôi có con nhỏ nên cần môi trường phù hợp.",
+        recipientUserId: users[0]?._id,
+        isRead: true,
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 ngày trước
+      },
+      {
+        propertyId: properties[2]!._id,
+        senderName: "Phạm Văn E",
+        senderPhone: "0907654321",
+        senderEmail: "phamvane@yahoo.com",
+        message:
+          "Đất này diện tích bao nhiêu? Có sổ hồng riêng chưa? Tôi đang tìm đất để xây nhà ở.",
+        recipientUserId: users[0]?._id,
+        isRead: false,
+        createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 phút trước
+      },
+    ]);
+  }
 
   console.log("tạo seed mẫu hoàn tất.");
   process.exit(0);

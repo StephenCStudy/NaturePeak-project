@@ -9,7 +9,7 @@ const propertySchema = new mongoose.Schema({
   bedrooms: { type: Number },
   bathrooms: { type: Number },
   area: { type: Number },
-  agent: { type: mongoose.Schema.Types.ObjectId, ref: "Agent" }, // ng liên hệ 
+  agent: { type: mongoose.Schema.Types.ObjectId, ref: "Agent" }, // ng liên hệ
   model: { type: String, enum: ["flat", "land"], required: true }, //loai. hinh` căn họo hoặc đất nền
   transactionType: { type: String, enum: ["sell", "rent"], required: true }, // bán hoặc cho thuê
   views: { type: Number, default: 0 },
@@ -18,7 +18,17 @@ const propertySchema = new mongoose.Schema({
   status: { type: String, enum: ["active", "hidden"], default: "active" }, // ẩn hiệu của user
   createdAt: { type: Date, default: Date.now }, // ngày tạo
   // admin duyệt bài?
-  waitingStatus: { type: String, enum: ["waiting", "reviewed", "block"], default: "waiting" },
+  waitingStatus: {
+    type: String,
+    enum: ["waiting", "reviewed", "block"],
+    default: "waiting",
+  },
+  // tiện ích xung quanh
+  amenities: [{ type: String }],
+  // thông tin liên hệ
+  contactName: { type: String },
+  contactPhone: { type: String },
+  contactEmail: { type: String },
 });
 
 export default mongoose.model("Property", propertySchema);

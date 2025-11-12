@@ -56,6 +56,11 @@ export const PropertyController = {
       const property = await Property.findById(req.params.id).populate("agent");
       if (!property)
         return res.status(404).json({ message: "Property not found" });
+
+      // Tăng views lên 1
+      property.views = (property.views || 0) + 1;
+      await property.save();
+
       res.json(property);
     } catch (err) {
       res.status(500).json({ message: (err as any).message });

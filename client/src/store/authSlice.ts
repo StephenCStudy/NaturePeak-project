@@ -17,6 +17,7 @@ export type AuthUser = {
   role?: string | null;
   phone?: string;
   avatar?: string;
+  avatarUrl?: string;
   isBanned?: boolean;
 };
 
@@ -114,6 +115,20 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const fetchUserProfile = createAsyncThunk(
+  "auth/fetchProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.me();
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải thông tin người dùng"
+      );
+    }
+  }
+);
+
 export const fetchCurrentUser = createAsyncThunk(
   "auth/me",
   async (_, { rejectWithValue }) => {
@@ -177,20 +192,23 @@ export const authSlice = createSlice({
     });
     builder.addCase(loginUser.fulfilled, (state, action) => {
       state.loading = false;
+      const userData = action.payload.user as any;
       state.user = {
-        _id: action.payload.user.id,
-        id: action.payload.user.id,
-        name: action.payload.user.name,
-        email: action.payload.user.email,
-        role: action.payload.user.role,
-        isBanned: action.payload.user.isBanned || false,
+        _id: userData.id,
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        role: userData.role,
+        avatarUrl: userData.avatarUrl,
+        isBanned: userData.isBanned || false,
       };
       state.token = action.payload.token;
-      state.role = action.payload.user.role;
+      state.role = userData.role;
 
       // Persist to sessionStorage
       sessionStorage.setItem("auth_token", action.payload.token);
-      sessionStorage.setItem("auth_role", action.payload.user.role);
+      sessionStorage.setItem("auth_role", userData.role);
     });
     builder.addCase(loginUser.rejected, (state, action) => {
       state.loading = false;
@@ -244,20 +262,23 @@ export const authSlice = createSlice({
     });
     builder.addCase(rememberLogin.fulfilled, (state, action) => {
       state.loading = false;
+      const userData = action.payload.user as any;
       state.user = {
-        _id: action.payload.user.id,
-        id: action.payload.user.id,
-        name: action.payload.user.name,
-        email: action.payload.user.email,
-        role: action.payload.user.role,
-        isBanned: action.payload.user.isBanned || false,
+        _id: userData.id,
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        role: userData.role,
+        avatarUrl: userData.avatarUrl,
+        isBanned: userData.isBanned || false,
       };
       state.token = action.payload.token;
-      state.role = action.payload.user.role;
+      state.role = userData.role;
 
       // Persist to sessionStorage
       sessionStorage.setItem("auth_token", action.payload.token);
-      sessionStorage.setItem("auth_role", action.payload.user.role);
+      sessionStorage.setItem("auth_role", userData.role);
     });
     builder.addCase(rememberLogin.rejected, (state, action) => {
       state.loading = false;
@@ -294,6 +315,31 @@ export const authSlice = createSlice({
       state.role = null;
       sessionStorage.removeItem("auth_token");
       sessionStorage.removeItem("auth_role");
+    });
+
+    // Fetch user profile (for profile updates)
+    builder.addCase(fetchUserProfile.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchUserProfile.fulfilled, (state, action) => {
+      state.loading = false;
+      state.user = {
+        _id: action.payload._id,
+        id: action.payload._id,
+        name: action.payload.name,
+        email: action.payload.email,
+        role: action.payload.role,
+        phone: action.payload.phone,
+        avatar: action.payload.avatar,
+        avatarUrl: (action.payload as any).avatarUrl,
+        isBanned: action.payload.isBanned || false,
+      };
+      state.role = action.payload.role;
+    });
+    builder.addCase(fetchUserProfile.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
     });
   },
 });
