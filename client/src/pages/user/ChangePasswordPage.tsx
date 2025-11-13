@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -14,9 +14,67 @@ const ChangePasswordPage: React.FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [currentPasswordHash, setCurrentPasswordHash] = useState<string | null>(null);
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
+  const [isCurrentPasswordValid, setIsCurrentPasswordValid] = useState<boolean | null>(null);
+
+  // Fetch current password hash when component mounts
+  useEffect(() => {
+    const fetchCurrentPassword = async () => {
+      try {
+        const response = await api.get("/users/password/current");
+        setCurrentPasswordHash(response.data.password);
+      } catch (error: any) {
+        console.error("Error fetching current password:", error);
+        toast.error("Không thể lấy thông tin mật khẩu hiện tại");
+      }
+    };
+
+    fetchCurrentPassword();
+  }, []);
+
+  // Verify current password when user types it
+  useEffect(() => {
+    if (currentPassword && currentPasswordHash) {
+      const verifyPassword = async () => {
+        setIsVerifyingPassword(true);
+        try {
+          const response = await api.post("/users/password/verify", {
+            password: currentPassword,
+          });
+          setIsCurrentPasswordValid(response.data.isValid);
+        } catch (error: any) {
+          console.error("Error verifying password:", error);
+          setIsCurrentPasswordValid(false);
+        } finally {
+          setIsVerifyingPassword(false);
+        }
+      };
+
+      // Debounce verification
+      const timeoutId = setTimeout(() => {
+        verifyPassword();
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setIsCurrentPasswordValid(null);
+    }
+  }, [currentPassword, currentPasswordHash]);
 
   const validate = () => {
     if (!currentPassword) return "Vui lòng nhập mật khẩu hiện tại";
+    
+    // Check if password verification is still in progress
+    if (isVerifyingPassword) {
+      return "Đang xác thực mật khẩu...";
+    }
+
+    // Check if current password is valid
+    if (currentPassword && isCurrentPasswordValid === false) {
+      return "Mật khẩu hiện tại không đúng";
+    }
+
     if (newPassword.length < 6) return "Mật khẩu mới phải có ít nhất 6 ký tự";
     if (newPassword === currentPassword)
       return "Mật khẩu mới phải khác mật khẩu hiện tại";
@@ -91,7 +149,13 @@ const ChangePasswordPage: React.FC = () => {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Nhập mật khẩu hiện tại"
                 required
-                className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none transition-colors"
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none transition-colors ${
+                  currentPassword && isCurrentPasswordValid === false
+                    ? "border-red-500 focus:border-red-500"
+                    : currentPassword && isCurrentPasswordValid === true
+                    ? "border-green-500 focus:border-green-500"
+                    : "border-gray-200 focus:border-(--color-primary)"
+                }`}
               />
               <button
                 type="button"
@@ -105,6 +169,19 @@ const ChangePasswordPage: React.FC = () => {
                 )}
               </button>
             </div>
+            {isVerifyingPassword && (
+              <p className="text-xs text-gray-500 mt-1">Đang xác thực...</p>
+            )}
+            {currentPassword && isCurrentPasswordValid === false && (
+              <p className="text-xs text-red-500 mt-1">
+                Mật khẩu hiện tại không đúng
+              </p>
+            )}
+            {currentPassword && isCurrentPasswordValid === true && (
+              <p className="text-xs text-green-500 mt-1">
+                Mật khẩu hiện tại đúng
+              </p>
+            )}
           </div>
 
           {/* New Password */}
@@ -219,7 +296,7 @@ const ChangePasswordPage: React.FC = () => {
             <button
               type="submit"
               className="flex-1 bg-(--color-primary) text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#062a35] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
+              disabled={loading || isVerifyingPassword || isCurrentPasswordValid === false}
             >
               {loading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
             </button>

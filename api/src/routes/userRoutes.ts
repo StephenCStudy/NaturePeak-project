@@ -7,6 +7,16 @@ const router = express.Router();
 
 router.get("/", controllers.UserController.getUsers);
 router.post("/", controllers.UserController.createUser);
+router.get(
+  "/password/current",
+  authenticate,
+  controllers.UserController.getCurrentPassword
+);
+router.post(
+  "/password/verify",
+  authenticate,
+  controllers.UserController.verifyPassword
+);
 router.put(
   "/profile/me",
   authenticate,

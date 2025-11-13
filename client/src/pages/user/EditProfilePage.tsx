@@ -30,9 +30,10 @@ const EditProfilePage: React.FC = () => {
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
-        avatarUrl: (user as any).avatarUrl || user.avatar || "",
+        avatarUrl: (user as any).avatarUrl,
       });
-      setAvatarPreview((user as any).avatarUrl || user.avatar || "");
+      setAvatarPreview((user as any).avatarUrl);
+      // console.log("user", user);
     }
   }, [user]);
 

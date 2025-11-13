@@ -127,6 +127,50 @@ export const UserController = {
     }
   },
 
+  getCurrentPassword: async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await User.findById(userId).select("password");
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return password hash for client-side validation
+      res.json({ password: user.password });
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  verifyPassword: async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { password } = req.body;
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Verify password
+      const isMatch = await bcrypt.compare(password, user.password);
+      res.json({ isValid: isMatch });
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
   changePassword: async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.id;
