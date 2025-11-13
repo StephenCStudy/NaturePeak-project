@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
@@ -59,7 +59,7 @@ const ListingPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 6; // page size
 
-  // Filters
+  // Filters (applied to fetch)
   const [filters, setFilters] = useState({
     search: "",
     type: "",
@@ -73,9 +73,62 @@ const ListingPage: React.FC = () => {
     bathrooms: "",
   });
 
+  // Pending filters shown in the advanced filter UI; applied only when clicking Search
+  const [pendingFilters, setPendingFilters] = useState(filters);
+
+  // Top search input with debounce to avoid reload on every keystroke
+  const [searchInput, setSearchInput] = useState("");
+  const locationHook = useLocation();
+
   useEffect(() => {
     fetchProperties();
   }, [currentPage, sortBy, filters]);
+
+  // Initialize filters from URL query params on first mount or when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(locationHook.search);
+    const next = {
+      search: params.get("search") || "",
+      type: params.get("type") || "",
+      propertyType: params.get("propertyType") || "",
+      location: params.get("location") || "",
+      minPrice: params.get("minPrice") || "",
+      maxPrice: params.get("maxPrice") || "",
+      minArea: params.get("minArea") || "",
+      maxArea: params.get("maxArea") || "",
+      bedrooms: params.get("bedrooms") || "",
+      bathrooms: params.get("bathrooms") || "",
+    };
+    setFilters(next);
+    setPendingFilters(next);
+    setSearchInput(next.search);
+    setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locationHook.search]);
+
+  // Sync pending filters with current filters when opening the filter panel
+  useEffect(() => {
+    if (showFilters) {
+      setPendingFilters(filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFilters]);
+
+  // Debounce top search; apply only when empty or length >= 2
+  useEffect(() => {
+    const q = searchInput.trim();
+    if (q === "") {
+      setFilters((prev) => ({ ...prev, search: "" }));
+      setCurrentPage(1);
+      return;
+    }
+    if (q.length < 2) return; // don't trigger on single character
+    const t = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: q }));
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -318,13 +371,23 @@ const ListingPage: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  // const handleFilterChange = (key: string, value: string) => {
+  //   setFilters((prev) => ({ ...prev, [key]: value }));
+  //   setCurrentPage(1);
+  // };
+
+  // Advanced filters change (do not apply immediately)
+  const handlePendingFilterChange = (key: string, value: string) => {
+    setPendingFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const applyPendingFilters = () => {
+    setFilters(pendingFilters);
     setCurrentPage(1);
   };
 
   const clearFilters = () => {
-    setFilters({
+    const cleared = {
       search: "",
       type: "",
       propertyType: "",
@@ -335,7 +398,10 @@ const ListingPage: React.FC = () => {
       maxArea: "",
       bedrooms: "",
       bathrooms: "",
-    });
+    };
+    setFilters(cleared);
+    setPendingFilters(cleared);
+    setSearchInput("");
     setCurrentPage(1);
   };
 
@@ -393,8 +459,8 @@ const ListingPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Tìm kiếm theo tiêu đề hoặc địa điểm..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20 outline-none transition-all"
               />
             </div>
@@ -456,8 +522,10 @@ const ListingPage: React.FC = () => {
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-200">
               <select
-                value={filters.type}
-                onChange={(e) => handleFilterChange("type", e.target.value)}
+                value={pendingFilters.type}
+                onChange={(e) =>
+                  handlePendingFilterChange("type", e.target.value)
+                }
                 className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Loại giao dịch</option>
@@ -466,9 +534,9 @@ const ListingPage: React.FC = () => {
               </select>
 
               <select
-                value={filters.propertyType}
+                value={pendingFilters.propertyType}
                 onChange={(e) =>
-                  handleFilterChange("propertyType", e.target.value)
+                  handlePendingFilterChange("propertyType", e.target.value)
                 }
                 className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
@@ -480,14 +548,18 @@ const ListingPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Khu vực"
-                value={filters.location}
-                onChange={(e) => handleFilterChange("location", e.target.value)}
+                value={pendingFilters.location}
+                onChange={(e) =>
+                  handlePendingFilterChange("location", e.target.value)
+                }
                 className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               />
 
               <select
-                value={filters.bedrooms}
-                onChange={(e) => handleFilterChange("bedrooms", e.target.value)}
+                value={pendingFilters.bedrooms}
+                onChange={(e) =>
+                  handlePendingFilterChange("bedrooms", e.target.value)
+                }
                 className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
               >
                 <option value="">Số phòng ngủ</option>
@@ -501,18 +573,18 @@ const ListingPage: React.FC = () => {
                 <input
                   type="number"
                   placeholder="Giá từ"
-                  value={filters.minPrice}
+                  value={pendingFilters.minPrice}
                   onChange={(e) =>
-                    handleFilterChange("minPrice", e.target.value)
+                    handlePendingFilterChange("minPrice", e.target.value)
                   }
                   className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
                 />
                 <input
                   type="number"
                   placeholder="Giá đến"
-                  value={filters.maxPrice}
+                  value={pendingFilters.maxPrice}
                   onChange={(e) =>
-                    handleFilterChange("maxPrice", e.target.value)
+                    handlePendingFilterChange("maxPrice", e.target.value)
                   }
                   className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
                 />
@@ -525,24 +597,30 @@ const ListingPage: React.FC = () => {
                 <input
                   type="number"
                   placeholder="DT từ (m²)"
-                  value={filters.minArea}
+                  value={pendingFilters.minArea}
                   onChange={(e) =>
-                    handleFilterChange("minArea", e.target.value)
+                    handlePendingFilterChange("minArea", e.target.value)
                   }
                   className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
                 />
                 <input
                   type="number"
                   placeholder="DT đến (m²)"
-                  value={filters.maxArea}
+                  value={pendingFilters.maxArea}
                   onChange={(e) =>
-                    handleFilterChange("maxArea", e.target.value)
+                    handlePendingFilterChange("maxArea", e.target.value)
                   }
                   className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
                 />
               </div>
 
-              <div className="lg:col-span-2 flex items-center justify-end">
+              <div className="lg:col-span-2 flex items-center justify-end gap-3">
+                <button
+                  onClick={applyPendingFilters}
+                  className="px-6 h-10 rounded-lg text-sm bg-(--color-primary) text-white hover:opacity-90 transition-colors"
+                >
+                  Tìm kiếm
+                </button>
                 <button
                   onClick={clearFilters}
                   className="px-6 h-10 rounded-lg border border-gray-200 text-sm bg-white hover:bg-gray-50 hover:border-blue-500 transition-colors"

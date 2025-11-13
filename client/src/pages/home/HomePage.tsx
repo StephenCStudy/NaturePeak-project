@@ -59,7 +59,16 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-linear-to-b from-(--color-cream) to-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <HeroSearch onSearch={(q) => console.log("search", q)} />
+        <HeroSearch
+          onSearch={(q: { q?: string; propertyType?: string }) => {
+            const params = new URLSearchParams();
+            const keyword = (q.q || "").trim();
+            if (keyword) params.set("search", keyword);
+            if (q.propertyType && q.propertyType !== "all")
+              params.set("propertyType", q.propertyType);
+            navigate(`/posts?${params.toString()}`);
+          }}
+        />
 
         {/* Featured Properties Section */}
         <section className="mt-12">
