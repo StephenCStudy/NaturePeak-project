@@ -5,10 +5,13 @@ const HeroSearch: React.FC<{ onSearch?: (q: any) => void }> = ({
   onSearch,
 }) => {
   const [q, setQ] = useState("");
+  const [ptype, setPtype] = useState<"all" | "apartment" | "land">("all");
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch?.({ q });
+    const payload: any = { q };
+    if (ptype && ptype !== "all") payload.propertyType = ptype;
+    onSearch?.(payload);
   };
 
   return (
@@ -71,10 +74,14 @@ const HeroSearch: React.FC<{ onSearch?: (q: any) => void }> = ({
                 <label className="block text-sm font-semibold text-[#083344] mb-2">
                   Loại bất động sản
                 </label>
-                <select className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:border-(--color-primary) outline-none transition-colors">
-                  <option>Tất cả loại</option>
-                  <option>🏠 Căn hộ</option>
-                  <option>🏞️ Đất nền</option>
+                <select
+                  value={ptype}
+                  onChange={(e) => setPtype(e.target.value as any)}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:border-(--color-primary) outline-none transition-colors"
+                >
+                  <option value="all">Tất cả loại</option>
+                  <option value="apartment">🏠 Căn hộ</option>
+                  <option value="land">🏞️ Đất nền</option>
                 </select>
               </div>
 
