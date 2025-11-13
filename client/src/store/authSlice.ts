@@ -16,7 +16,6 @@ export type AuthUser = {
   email?: string;
   role?: string | null;
   phone?: string;
-  avatar?: string;
   avatarUrl?: string;
   isBanned?: boolean;
 };
@@ -301,7 +300,7 @@ export const authSlice = createSlice({
         email: action.payload.email,
         role: action.payload.role,
         phone: action.payload.phone,
-        avatar: action.payload.avatar,
+        avatarUrl: (action.payload as any).avatarUrl,
         isBanned: action.payload.isBanned || false,
       };
       state.role = action.payload.role;
@@ -331,7 +330,6 @@ export const authSlice = createSlice({
         email: action.payload.email,
         role: action.payload.role,
         phone: action.payload.phone,
-        avatar: action.payload.avatar,
         avatarUrl: (action.payload as any).avatarUrl,
         isBanned: action.payload.isBanned || false,
       };
