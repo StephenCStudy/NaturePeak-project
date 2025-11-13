@@ -78,6 +78,17 @@ const AdminPage: React.FC = () => {
     "all" | "pending" | "approved" | "rejected"
   >("all");
 
+  // Search/filter controls for properties
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [minPrice, setMinPrice] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
+
+  // Search/filter controls for users
+  const [userSearchKeyword, setUserSearchKeyword] = useState("");
+  const [userSearchEmail, setUserSearchEmail] = useState("");
+  const [userSearchPhone, setUserSearchPhone] = useState("");
+
   // Pagination states
   const [locationPage, setLocationPage] = useState(1); // trang hiện tại quản lý khu vực
   const [activityPage, setActivityPage] = useState(1); // trang hiện tại quản lý hoạt động gần đây
@@ -105,14 +116,28 @@ const AdminPage: React.FC = () => {
     if (activeTab === "properties") {
       fetchProperties();
     }
-  }, [filter, propertyPage, activeTab]);
+  }, [
+    filter,
+    propertyPage,
+    activeTab,
+    searchKeyword,
+    minPrice,
+    maxPrice,
+    userEmail,
+  ]);
 
-  // Fetch users when page changes
+  // Fetch users when page changes or search terms change
   useEffect(() => {
     if (activeTab === "users") {
       fetchUsers();
     }
-  }, [userPage, activeTab]);
+  }, [
+    userPage,
+    activeTab,
+    userSearchKeyword,
+    userSearchEmail,
+    userSearchPhone,
+  ]);
 
   // Helper function để chuyển đổi dữ liệu từ API sang format UI
   const transformApiPropertyToUI = (apiProp: ApiProperty): Property => {
@@ -239,6 +264,10 @@ const AdminPage: React.FC = () => {
         page: propertyPage,
         limit: PROPERTIES_PER_PAGE,
         waitingStatus: waitingStatusMap[filter],
+        search: searchKeyword || undefined,
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
+        userEmail: userEmail || undefined,
       });
 
       const transformedProperties = (response.properties || []).map(
@@ -262,6 +291,9 @@ const AdminPage: React.FC = () => {
       const response = await adminService.getUsersPaginated({
         page: userPage,
         limit: USERS_PER_PAGE,
+        search: userSearchKeyword || undefined,
+        email: userSearchEmail || undefined,
+        phone: userSearchPhone || undefined,
       });
 
       // Lấy tất cả properties để đếm posts count
@@ -704,7 +736,7 @@ const AdminPage: React.FC = () => {
         {/* Properties Tab */}
         {activeTab === "properties" && (
           <div className="space-y-6">
-            {/* Filter Tabs - Get counts from stats */}
+            {/* Status Tabs */}
             <div className="bg-white rounded-2xl p-2 shadow-soft">
               <div className="flex gap-2">
                 {[
@@ -746,6 +778,62 @@ const AdminPage: React.FC = () => {
                     {tab.label} ({tab.count})
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Search Controls */}
+            <div className="bg-white rounded-2xl p-4 shadow-soft">
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  placeholder="Tìm theo tên/địa điểm"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-48"
+                />
+                <input
+                  value={minPrice}
+                  onChange={(e) =>
+                    setMinPrice(e.target.value.replace(/[^0-9]/g, ""))
+                  }
+                  placeholder="Giá từ"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-28"
+                />
+                <input
+                  value={maxPrice}
+                  onChange={(e) =>
+                    setMaxPrice(e.target.value.replace(/[^0-9]/g, ""))
+                  }
+                  placeholder="Giá đến"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-28"
+                />
+                <input
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  placeholder="Người đăng (email)"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-56"
+                />
+                <button
+                  onClick={() => {
+                    setPropertyPage(1);
+                    fetchProperties();
+                  }}
+                  className="h-10 px-4 rounded-lg bg-(--color-primary) text-white font-medium hover:opacity-90"
+                >
+                  Tìm kiếm
+                </button>
+                <button
+                  onClick={() => {
+                    setSearchKeyword("");
+                    setMinPrice("");
+                    setMaxPrice("");
+                    setUserEmail("");
+                    setPropertyPage(1);
+                    fetchProperties();
+                  }}
+                  className="h-10 px-3 rounded-lg bg-gray-100 text-[#083344] font-medium hover:bg-gray-200"
+                >
+                  Xóa
+                </button>
               </div>
             </div>
 
@@ -947,155 +1035,205 @@ const AdminPage: React.FC = () => {
 
         {/* Users Tab */}
         {activeTab === "users" && (
-          <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-heading font-semibold text-[#083344]">
-                Danh sách người dùng
-              </h3>
+          <div className="space-y-6">
+            {/* Search Controls */}
+            <div className="bg-white rounded-2xl p-4 shadow-soft">
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  value={userSearchKeyword}
+                  onChange={(e) => setUserSearchKeyword(e.target.value)}
+                  placeholder="Tìm theo tên"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-48"
+                />
+                <input
+                  value={userSearchEmail}
+                  onChange={(e) => setUserSearchEmail(e.target.value)}
+                  placeholder="Tìm theo email"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-56"
+                />
+                <input
+                  value={userSearchPhone}
+                  onChange={(e) => setUserSearchPhone(e.target.value)}
+                  placeholder="Tìm theo số điện thoại"
+                  className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-56"
+                />
+                <button
+                  onClick={() => {
+                    setUserPage(1);
+                    fetchUsers();
+                  }}
+                  className="h-10 px-4 rounded-lg bg-(--color-primary) text-white font-medium hover:opacity-90"
+                >
+                  Tìm kiếm
+                </button>
+                <button
+                  onClick={() => {
+                    setUserSearchKeyword("");
+                    setUserSearchEmail("");
+                    setUserSearchPhone("");
+                    setUserPage(1);
+                    fetchUsers();
+                  }}
+                  className="h-10 px-3 rounded-lg bg-gray-100 text-[#083344] font-medium hover:bg-gray-200"
+                >
+                  Xóa
+                </button>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-(--color-cream)">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
-                      Người dùng
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
-                      Liên hệ
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
-                      Số tin đăng
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
-                      Trạng thái
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
-                      Hành động
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-(--color-pastel) rounded-full flex items-center justify-center">
-                            <HiUser className="w-5 h-5 text-(--color-primary)" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-[#083344]">
-                              {user.name}
-                            </div>
-                            <div className="text-sm text-muted">
-                              {user.role === "admin"
-                                ? "Quản trị viên"
-                                : "Người dùng"}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
+            <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-xl font-heading font-semibold text-[#083344]">
+                  Danh sách người dùng
+                </h3>
+              </div>
 
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <HiMail className="w-4 h-4 text-muted" />
-                            <span className="text-muted">{user.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <HiPhone className="w-4 h-4 text-muted" />
-                            <span className="text-muted">{user.phone}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-[#083344]">
-                          {user.postsCount}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            user.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {user.isActive ? "Hoạt động" : "Vô hiệu hóa"}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() =>
-                            handleUserAction(
-                              user._id,
-                              user.isActive ? "deactivate" : "activate"
-                            )
-                          }
-                          className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                            user.isActive
-                              ? "bg-red-100 text-red-700 hover:bg-red-500 hover:text-white"
-                              : "bg-green-100 text-green-700 hover:bg-green-500 hover:text-white"
-                          }`}
-                        >
-                          {user.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* No users message */}
-                  {users.length === 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-(--color-cream)">
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
-                        <HiUser className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-lg font-medium text-muted">
-                          Không có người dùng nào
-                        </p>
-                      </td>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
+                        Người dùng
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
+                        Liên hệ
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
+                        Số tin đăng
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
+                        Trạng thái
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-[#083344]">
+                        Hành động
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-(--color-pastel) rounded-full flex items-center justify-center">
+                              <HiUser className="w-5 h-5 text-(--color-primary)" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-[#083344]">
+                                {user.name}
+                              </div>
+                              <div className="text-sm text-muted">
+                                {user.role === "admin"
+                                  ? "Quản trị viên"
+                                  : "Người dùng"}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
 
-            {/* Pagination Controls */}
-            {totalUsers > USERS_PER_PAGE && (
-              <div className="bg-white border-t border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted">
-                    Hiển thị{" "}
-                    {Math.min((userPage - 1) * USERS_PER_PAGE + 1, totalUsers)}{" "}
-                    - {Math.min(userPage * USERS_PER_PAGE, totalUsers)} trong
-                    tổng {totalUsers} người dùng
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setUserPage((p) => Math.max(1, p - 1))}
-                      disabled={userPage === 1}
-                      className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <HiChevronLeft className="w-5 h-5 text-[#083344]" />
-                    </button>
-                    <span className="text-sm font-medium text-[#083344]">
-                      {userPage} / {totalUserPages}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setUserPage((p) => Math.min(totalUserPages, p + 1))
-                      }
-                      disabled={userPage >= totalUserPages}
-                      className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <HiChevronRight className="w-5 h-5 text-[#083344]" />
-                    </button>
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <HiMail className="w-4 h-4 text-muted" />
+                              <span className="text-muted">{user.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <HiPhone className="w-4 h-4 text-muted" />
+                              <span className="text-muted">{user.phone}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-[#083344]">
+                            {user.postsCount}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              user.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {user.isActive ? "Hoạt động" : "Vô hiệu hóa"}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() =>
+                              handleUserAction(
+                                user._id,
+                                user.isActive ? "deactivate" : "activate"
+                              )
+                            }
+                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                              user.isActive
+                                ? "bg-red-100 text-red-700 hover:bg-red-500 hover:text-white"
+                                : "bg-green-100 text-green-700 hover:bg-green-500 hover:text-white"
+                            }`}
+                          >
+                            {user.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* No users message */}
+                    {users.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center">
+                          <HiUser className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-lg font-medium text-muted">
+                            Không có người dùng nào
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalUsers > USERS_PER_PAGE && (
+                <div className="bg-white border-t border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted">
+                      Hiển thị{" "}
+                      {Math.min(
+                        (userPage - 1) * USERS_PER_PAGE + 1,
+                        totalUsers
+                      )}{" "}
+                      - {Math.min(userPage * USERS_PER_PAGE, totalUsers)} trong
+                      tổng {totalUsers} người dùng
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                        disabled={userPage === 1}
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <HiChevronLeft className="w-5 h-5 text-[#083344]" />
+                      </button>
+                      <span className="text-sm font-medium text-[#083344]">
+                        {userPage} / {totalUserPages}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setUserPage((p) => Math.min(totalUserPages, p + 1))
+                        }
+                        disabled={userPage >= totalUserPages}
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <HiChevronRight className="w-5 h-5 text-[#083344]" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>

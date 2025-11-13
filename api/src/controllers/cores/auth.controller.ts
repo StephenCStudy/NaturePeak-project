@@ -12,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 export const AuthController = {
   register: async (req: Request, res: Response) => {
     try {
-      const { name, email, password, phone } = req.body;
+      const { name, email, password, phone, isAgent } = req.body as any;
       if (!email || !password || !name || !phone)
         return res.status(400).json({ message: "All fields required!" });
 
@@ -29,6 +29,19 @@ export const AuthController = {
         role: "user",
         createdAt: new Date(),
       });
+
+      // Optionally create Agent profile if requested
+      if (isAgent === true || isAgent === "true") {
+        const existedAgent = await Agent.findOne({ email });
+        if (!existedAgent) {
+          await Agent.create({
+            name,
+            email,
+            phone,
+            password: hashed,
+          });
+        }
+      }
 
       const { password: _, ...userData } = user.toObject();
       res.status(201).json(userData);

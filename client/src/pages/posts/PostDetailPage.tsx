@@ -131,14 +131,17 @@ const PostDetailPage: React.FC = () => {
     if (!price) return "Liên hệ";
 
     if (price >= 1000000000) {
-      return `${(price / 1000000000).toFixed(1)} tỷ${transactionType === "rent" ? "/tháng" : ""
-        }`;
-    } else if (price >= 1000000) {
-      return `${(price / 1000000).toFixed(0)} triệu${transactionType === "rent" ? "/tháng" : ""
-        }`;
-    }
-    return `${price.toLocaleString()}${transactionType === "rent" ? "/tháng" : ""
+      return `${(price / 1000000000).toFixed(1)} tỷ${
+        transactionType === "rent" ? "/tháng" : ""
       }`;
+    } else if (price >= 1000000) {
+      return `${(price / 1000000).toFixed(0)} triệu${
+        transactionType === "rent" ? "/tháng" : ""
+      }`;
+    }
+    return `${price.toLocaleString()}${
+      transactionType === "rent" ? "/tháng" : ""
+    }`;
   };
 
   const nextImage = () => {
@@ -262,10 +265,11 @@ const PostDetailPage: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-20 rounded-lg overflow-hidden border-2 transition-all ${currentImageIndex === index
-                        ? "border-(--color-primary)"
-                        : "border-gray-200 hover:border-(--color-primary)/50"
-                        }`}
+                      className={`h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                        currentImageIndex === index
+                          ? "border-(--color-primary)"
+                          : "border-gray-200 hover:border-(--color-primary)/50"
+                      }`}
                     >
                       <img
                         src={image}
@@ -309,8 +313,8 @@ const PostDetailPage: React.FC = () => {
                       property.createdAt &&
                       (new Date().getTime() -
                         new Date(property.createdAt).getTime()) /
-                      (1000 * 60 * 60 * 24) <=
-                      7;
+                        (1000 * 60 * 60 * 24) <=
+                        7;
                     const isPopular = (property.views || 0) > 100;
 
                     if (isNew) {
@@ -330,19 +334,21 @@ const PostDetailPage: React.FC = () => {
                   })()}
 
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${property.transactionType === "sell"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-blue-100 text-blue-800"
-                      }`}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                      property.transactionType === "sell"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
                   >
                     {property.transactionType === "sell" ? "Bán" : "Cho thuê"}
                   </span>
 
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${property.model === "flat"
-                      ? "bg-purple-100 text-purple-800"
-                      : "bg-amber-100 text-amber-800"
-                      }`}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                      property.model === "flat"
+                        ? "bg-purple-100 text-purple-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
                   >
                     {property.model === "flat" ? "Căn hộ" : "Đất nền"}
                   </span>
@@ -448,93 +454,87 @@ const PostDetailPage: React.FC = () => {
                 Thông tin liên hệ
               </h3>
 
-              {property.contactName && property.contactPhone ? (
-                <>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">
-                      <HiUser className="w-8 h-8 text-(--color-primary)" />
+              {(() => {
+                // Ưu tiên hiển thị: contactName/contactPhone > agent > userId
+                const contactInfo =
+                  property.contactName && property.contactPhone
+                    ? {
+                        name: property.contactName,
+                        phone: property.contactPhone,
+                        email: property.contactEmail,
+                        title: "Người liên hệ",
+                      }
+                    : property.agent
+                    ? {
+                        name: property.agent.name,
+                        phone: property.agent.phone,
+                        email: property.agent.email,
+                        title: property.agent.agency || "Chuyên viên tư vấn",
+                      }
+                    : property.userId && typeof property.userId === "object"
+                    ? {
+                        name: property.userId.name,
+                        phone: property.userId.phone,
+                        email: property.userId.email,
+                        title: "Chủ bất động sản",
+                      }
+                    : null;
+
+                if (!contactInfo) {
+                  return (
+                    <div className="text-center text-muted py-4">
+                      <p>Thông tin liên hệ chưa được cập nhật</p>
                     </div>
-                    <div>
-                      <div className="font-semibold text-[#083344]">
-                        {property.contactName}
+                  );
+                }
+
+                return (
+                  <>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">
+                        <HiUser className="w-8 h-8 text-(--color-primary)" />
                       </div>
-                      <div className="text-sm text-muted">Người liên hệ</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 mb-6">
-                    <a
-                      href={`tel:${property.contactPhone}`}
-                      className="flex items-center gap-3 p-3 bg-(--color-primary) text-white rounded-lg hover:bg-(--color-primary)/90 transition-colors"
-                    >
-                      <HiPhone className="w-5 h-5" />
-                      <span>{property.contactPhone}</span>
-                    </a>
-
-                    {property.contactEmail && (
-                      <a
-                        href={`mailto:${property.contactEmail}`}
-                        className="flex items-center gap-3 p-3 border border-(--color-primary) text-(--color-primary) rounded-lg hover:bg-(--color-primary) hover:text-white transition-colors"
-                      >
-                        <HiMail className="w-5 h-5" />
-                        <span>{property.contactEmail}</span>
-                      </a>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => setShowContactForm(true)}
-                    className="w-full btn-accent"
-                  >
-                    Gửi tin nhắn
-                  </button>
-                </>
-              ) : property.agent ? (
-                <>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-(--color-pastel) rounded-full flex items-center justify-center">
-                      <HiUser className="w-8 h-8 text-(--color-primary)" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-[#083344]">
-                        {property.agent.name}
-                      </div>
-                      <div className="text-sm text-muted">
-                        {property.agent.agency || "Chuyên viên tư vấn"}
+                      <div>
+                        <div className="font-semibold text-[#083344]">
+                          {contactInfo.name}
+                        </div>
+                        <div className="text-sm text-muted">
+                          {contactInfo.title}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-3 mb-6">
-                    <a
-                      href={`tel:${property.agent.phone}`}
-                      className="flex items-center gap-3 p-3 bg-(--color-primary) text-white rounded-lg hover:bg-(--color-primary)/90 transition-colors"
+                    <div className="space-y-3 mb-6">
+                      {contactInfo.phone && (
+                        <a
+                          href={`tel:${contactInfo.phone}`}
+                          className="flex items-center gap-3 p-3 bg-(--color-primary) text-white rounded-lg hover:bg-(--color-primary)/90 transition-colors"
+                        >
+                          <HiPhone className="w-5 h-5" />
+                          <span>{contactInfo.phone}</span>
+                        </a>
+                      )}
+
+                      {contactInfo.email && (
+                        <a
+                          href={`mailto:${contactInfo.email}`}
+                          className="flex items-center gap-3 p-3 border border-(--color-primary) text-(--color-primary) rounded-lg hover:bg-(--color-primary) hover:text-white transition-colors"
+                        >
+                          <HiMail className="w-5 h-5" />
+                          <span>{contactInfo.email}</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => setShowContactForm(true)}
+                      className="w-full btn-accent"
                     >
-                      <HiPhone className="w-5 h-5" />
-                      <span>{property.agent.phone}</span>
-                    </a>
-
-                    <a
-                      href={`mailto:${property.agent.email}`}
-                      className="flex items-center gap-3 p-3 border border-(--color-primary) text-(--color-primary) rounded-lg hover:bg-(--color-primary) hover:text-white transition-colors"
-                    >
-                      <HiMail className="w-5 h-5" />
-                      <span>{property.agent.email}</span>
-                    </a>
-                  </div>
-
-                  <button
-                    onClick={() => setShowContactForm(true)}
-                    className="w-full btn-accent"
-                  >
-                    Gửi tin nhắn
-                  </button>
-                </>
-              ) : (
-                <div className="text-center text-muted py-4">
-                  <p>Thông tin liên hệ chưa được cập nhật</p>
-                </div>
-              )}
+                      Gửi tin nhắn
+                    </button>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Property Stats */}
@@ -569,8 +569,8 @@ const PostDetailPage: React.FC = () => {
               width="400"
               height="350"
               className="mt-5 rounded-2xl shadow-2xl"
-              loading="lazy">
-            </iframe>
+              loading="lazy"
+            ></iframe>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ import {
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser, clearError } from "../../store/authSlice";
+import agentService from "../../services/agentService";
 import type { AppDispatch, RootState } from "../../store";
 
 const RegisterPage: React.FC = () => {
@@ -26,6 +27,7 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [registerAsAgent, setRegisterAsAgent] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -100,9 +102,25 @@ const RegisterPage: React.FC = () => {
 
     try {
       const { confirmPassword, ...registerData } = formData;
-      const resultAction = await dispatch(registerUser(registerData));
+      const resultAction = await dispatch(
+        registerUser({ ...registerData, isAgent: registerAsAgent })
+      );
 
       if (registerUser.fulfilled.match(resultAction)) {
+        if (registerAsAgent) {
+          try {
+            const ag = await agentService.findByEmail(formData.email);
+            sessionStorage.setItem("agentEmail", ag.email);
+            sessionStorage.setItem("agentId", ag._id);
+            toast.success("Đăng ký thành công! Bạn đã được tạo đại lý.");
+            navigate("/agent");
+            return;
+          } catch (e) {
+            // fallback to agent login if lookup fails
+            navigate("/agent/login");
+            return;
+          }
+        }
         toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
         navigate("/login");
       }
@@ -332,6 +350,35 @@ const RegisterPage: React.FC = () => {
               {errors.terms && (
                 <p className="text-red-500 text-sm mt-1">{errors.terms}</p>
               )}
+            </div>
+
+            {/* Register as Agent */}
+            <div>
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={registerAsAgent}
+                  onChange={(e) => setRegisterAsAgent(e.target.checked)}
+                  className="w-5 h-5 text-(--color-primary) border-gray-300 rounded focus:ring-(--color-primary) mt-0.5"
+                />
+                <span className="text-sm text-muted leading-relaxed">
+                  Tôi đăng ký làm đại lý và đồng ý với{" "}
+                  <Link
+                    to="/terms"
+                    className="text-(--color-primary) hover:underline"
+                  >
+                    Điều khoản sử dụng
+                  </Link>{" "}
+                  và{" "}
+                  <Link
+                    to="/privacy"
+                    className="text-(--color-primary) hover:underline"
+                  >
+                    Chính sách bảo mật
+                  </Link>{" "}
+                  của NaturePeak.
+                </span>
+              </label>
             </div>
 
             {/* Submit Button */}

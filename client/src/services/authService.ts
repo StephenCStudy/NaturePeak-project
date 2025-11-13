@@ -68,6 +68,7 @@ export interface RegisterData {
   email: string; // Email (unique)
   password: string; // Mật khẩu (sẽ được hash ở backend)
   phone: string; // Số điện thoại
+  isAgent?: boolean; // Đăng ký làm đại lý
 }
 
 /**

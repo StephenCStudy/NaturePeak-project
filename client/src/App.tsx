@@ -22,6 +22,8 @@ import MyPostsPage from "./pages/user/MyPostsPage";
 import AddPostPage from "./pages/posts/AddPostPage";
 import EditPostPage from "./pages/posts/EditPostPage";
 import AdminPage from "./pages/admin/AdminPage";
+import AgentPage from "./pages/agent/AgentPage";
+import AgentLoginPage from "./pages/agent/AgentLoginPage";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCurrentUser } from "./store/authSlice";
 import type { AppDispatch, RootState } from "./store";
@@ -110,6 +112,8 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="/agent/login" element={<AgentLoginPage />} />
+            <Route path="/agent" element={<AgentPage />} />
           </Routes>
         </main>
 

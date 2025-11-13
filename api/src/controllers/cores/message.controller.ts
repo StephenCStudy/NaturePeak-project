@@ -1,6 +1,7 @@
 import Message from "../../models/Message.js";
 import Property from "../../models/Property.js";
 import User from "../../models/User.js";
+import Agent from "../../models/Agent.js";
 import { Request, Response } from "express";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 
@@ -164,6 +165,284 @@ export const MessageController = {
 
       await message.deleteOne();
       res.json({ message: "Đã xóa tin nhắn" });
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  // Đại lý gửi tin nhắn tới người dùng (không yêu cầu auth, xác thực qua email đại lý)
+  sendMessageFromAgent: async (req: Request, res: Response) => {
+    try {
+      const {
+        agentEmail,
+        propertyId,
+        recipientEmail,
+        recipientEmails,
+        message,
+      } = req.body as any;
+
+      if (!agentEmail || !propertyId || !message) {
+        return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+      }
+
+      const agent = await Agent.findOne({ email: agentEmail });
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
+
+      const property = await Property.findById(propertyId);
+      if (!property)
+        return res.status(404).json({ message: "Không tìm thấy bất động sản" });
+
+      // Xác nhận property thuộc đại lý này
+      if (
+        !property.agent ||
+        property.agent.toString() !== agent._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Bất động sản không thuộc đại lý này" });
+      }
+
+      // Xác định người nhận: hỗ trợ 1 hoặc nhiều email; nếu không truyền thì mặc định chủ bài đăng
+      const recipientIds: string[] = [];
+      if (
+        recipientEmails &&
+        Array.isArray(recipientEmails) &&
+        recipientEmails.length > 0
+      ) {
+        const users = await User.find({
+          email: { $in: recipientEmails },
+        }).select("_id");
+        if (!users || users.length === 0)
+          return res
+            .status(404)
+            .json({ message: "Không tìm thấy người nhận hợp lệ" });
+        recipientIds.push(...users.map((u) => u._id.toString()));
+      } else if (recipientEmail) {
+        // Handle comma-separated emails in recipientEmail field
+        const emailList = recipientEmail
+          .split(",")
+          .map((e: string) => e.trim())
+          .filter((e: string) => e.length > 0);
+
+        if (emailList.length > 1) {
+          // Multiple emails provided as comma-separated string
+          const users = await User.find({
+            email: { $in: emailList },
+          }).select("_id");
+          if (!users || users.length === 0)
+            return res
+              .status(404)
+              .json({ message: "Không tìm thấy người nhận hợp lệ" });
+          recipientIds.push(...users.map((u) => u._id.toString()));
+        } else if (emailList.length === 1) {
+          // Single email
+          const u = await User.findOne({ email: emailList[0] });
+          if (!u)
+            return res
+              .status(404)
+              .json({ message: "Không tìm thấy người dùng nhận" });
+          recipientIds.push(u._id.toString());
+        } else if (property.userId) {
+          // Empty email, send to property owner
+          recipientIds.push(property.userId.toString());
+        } else {
+          return res
+            .status(400)
+            .json({ message: "Thiếu thông tin người nhận" });
+        }
+      } else if (property.userId) {
+        recipientIds.push(property.userId.toString());
+      } else {
+        return res.status(400).json({ message: "Thiếu thông tin người nhận" });
+      }
+
+      const created = await Promise.all(
+        recipientIds.map((rid) =>
+          Message.create({
+            propertyId,
+            senderName: agent.name,
+            senderPhone: agent.phone,
+            senderEmail: agent.email,
+            message,
+            recipientUserId: rid,
+          })
+        )
+      );
+
+      const populated = await Message.find({
+        _id: { $in: created.map((m) => m._id) },
+      })
+        .populate("propertyId", "title images location price")
+        .populate("recipientUserId", "name email");
+
+      res
+        .status(201)
+        .json({ message: "Gửi tin nhắn thành công", data: populated });
+    } catch (err) {
+      console.error("Send message from agent error:", err);
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  // Tin nhắn tới các bài đăng thuộc đại lý (inbox đại lý)
+  getMessagesForAgent: async (req: Request, res: Response) => {
+    try {
+      const {
+        email,
+        page = "1",
+        limit = "10",
+      } = req.query as { email?: string; page?: string; limit?: string };
+      if (!email) return res.status(400).json({ message: "Missing email" });
+
+      const agent = await Agent.findOne({ email });
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
+
+      const props = await Property.find({ agent: agent._id }).select("_id");
+      const propIds = props.map((p) => p._id);
+      if (propIds.length === 0)
+        return res.json({
+          messages: [],
+          pagination: {
+            page: 1,
+            limit: Number(limit),
+            total: 0,
+            totalPages: 0,
+          },
+        });
+
+      const pageNum = parseInt(page!, 10);
+      const limitNum = parseInt(limit!, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      const filter = { propertyId: { $in: propIds } } as any;
+      const total = await Message.countDocuments(filter);
+      const messages = await Message.find(filter)
+        .populate("propertyId", "title images location price")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      res.json({
+        messages,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  // Danh sách tin đã gửi theo email đại lý (phân trang)
+  getMessagesSentByAgent: async (req: Request, res: Response) => {
+    try {
+      const {
+        email,
+        page = "1",
+        limit = "10",
+      } = req.query as { email?: string; page?: string; limit?: string };
+      if (!email) return res.status(400).json({ message: "Missing email" });
+
+      const pageNum = parseInt(page!, 10);
+      const limitNum = parseInt(limit!, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      const filter = { senderEmail: email } as any;
+      const total = await Message.countDocuments(filter);
+      const messages = await Message.find(filter)
+        .populate("propertyId", "title images location price")
+        .populate("recipientUserId", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      res.json({
+        messages,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  // Liên hệ của đại lý: tập hợp người gửi tin nhắn tới các bài đăng thuộc đại lý
+  getAgentContacts: async (req: Request, res: Response) => {
+    try {
+      const {
+        email,
+        page = "1",
+        limit = "4",
+      } = req.query as {
+        email?: string;
+        page?: string;
+        limit?: string;
+      };
+      if (!email) return res.status(400).json({ message: "Missing email" });
+
+      const agent = await Agent.findOne({ email });
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
+
+      const props = await Property.find({ agent: agent._id }).select("_id");
+      const propIds = props.map((p) => p._id);
+      if (propIds.length === 0)
+        return res.json({
+          contacts: [],
+          pagination: { page: 1, limit: 4, total: 0, totalPages: 0 },
+        });
+
+      const pageNum = parseInt(page!, 10);
+      const limitNum = parseInt(limit!, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Lấy các sender unique theo property của đại lý
+      const rows = await Message.aggregate([
+        { $match: { propertyId: { $in: propIds } } },
+        {
+          $group: {
+            _id: {
+              email: "$senderEmail",
+              phone: "$senderPhone",
+              name: "$senderName",
+            },
+            lastMessageAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { lastMessageAt: -1 } },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limitNum }],
+            total: [{ $count: "count" }],
+          },
+        },
+      ]);
+
+      const data = rows[0]?.data || [];
+      const total = rows[0]?.total[0]?.count || 0;
+
+      const contacts = data.map((r: any) => ({
+        name: r._id.name,
+        email: r._id.email,
+        phone: r._id.phone,
+        lastMessageAt: r.lastMessageAt,
+      }));
+
+      res.json({
+        contacts,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
     } catch (err) {
       res.status(500).json({ message: (err as any).message });
     }

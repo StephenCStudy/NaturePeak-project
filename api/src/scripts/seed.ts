@@ -18,14 +18,12 @@ const seed = async () => {
   // Hash passwords before creating users (and agents)
   const hashedUserPassword = await bcrypt.hash("1234567890", 10);
   const hashedAdminPassword = await bcrypt.hash("admin123", 10);
-  const hashedAgentPassword = await bcrypt.hash("agentpass123", 10);
 
   const agents = await Agent.create([
     {
       name: "Nguyen Van A",
       email: "nva@example.com",
       phone: "0987654321",
-      password: hashedAgentPassword,
       agency: "Dream Homes",
       agentcyImg:
         "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
@@ -34,7 +32,6 @@ const seed = async () => {
       name: "Tran Thi B",
       email: "tvb@example.com",
       phone: "0123456789",
-      password: hashedAgentPassword,
       agency: "Prime Realty",
       agentcyImg:
         "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828486/nha-pho-2-mat-tien-2-725_xqpy35.jpg",
@@ -2672,6 +2669,69 @@ Thanh toán linh hoạt, hỗ trợ vay ngân hàng 70%.`,
       contactName: "Phòng bán hàng dự án",
       contactPhone: "0903333444",
       contactEmail: "sales@example.com",
+    },
+    // Thêm property không có thông tin contact để test auto-fill từ userId
+    {
+      title: "Nhà phố 2 tầng giá tốt (Test auto-fill từ userId)",
+      description: `Nhà phố mới xây, thiết kế hiện đại.
+      
+Đặc điểm nổi bật:
+- Nhà mới 100%, chưa qua sử dụng
+- Thiết kế hiện đại, tối ưu không gian
+- Khu dân cư an ninh
+- Gần trường học, chợ
+
+Email sẽ lấy từ thông tin user đăng bài (userId).`,
+      price: 3200000000,
+      location: "Quận 12, Thành phố Hồ Chí Minh",
+      images: [
+        "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
+      ],
+      bedrooms: 3,
+      bathrooms: 2,
+      area: 80,
+      model: "flat",
+      transactionType: "sell",
+      // Không có agent, chỉ có userId
+      userId: users[1]?._id, // demo2@gmail.com
+      status: "active",
+      waitingStatus: "reviewed",
+      views: 123,
+      createdAt: new Date("2025-03-06"),
+      amenities: ["Gần trường học", "Gần chợ", "An ninh tốt"],
+      // Không có contactName, contactPhone, contactEmail
+      // Hệ thống sẽ tự động lấy từ userId
+    },
+    {
+      title: "Căn hộ mini cho thuê (Test auto-fill từ agent)",
+      description: `Căn hộ studio giá rẻ, full nội thất.
+      
+Tiện ích:
+- Full nội thất mới
+- Gần trường đại học
+- An ninh 24/7
+- Internet miễn phí
+
+Email sẽ lấy từ thông tin agent.`,
+      price: 4500000,
+      location: "Quận Thủ Đức, Thành phố Hồ Chí Minh",
+      images: [
+        "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
+      ],
+      bedrooms: 1,
+      bathrooms: 1,
+      area: 30,
+      model: "flat",
+      transactionType: "rent",
+      agent: agents[1]?._id, // tvb@example.com
+      userId: users[2]?._id,
+      status: "active",
+      waitingStatus: "reviewed",
+      views: 89,
+      createdAt: new Date("2025-03-07"),
+      amenities: ["Gần trường học", "An ninh 24/7", "Internet miễn phí"],
+      // Không có contactName, contactPhone, contactEmail
+      // Hệ thống sẽ tự động lấy từ agent
     },
   ]);
 

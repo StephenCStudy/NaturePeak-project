@@ -19,6 +19,11 @@ export interface PaginationParams {
   page?: number;
   limit?: number;
   waitingStatus?: "all" | "waiting" | "reviewed" | "block";
+  search?: string;
+  minPrice?: number | string;
+  maxPrice?: number | string;
+  userEmail?: string;
+  userName?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -116,11 +121,29 @@ const adminService = {
     params: PaginationParams
   ): Promise<PaginatedResponse<Property>> => {
     try {
-      const { page = 1, limit = 7, waitingStatus = "all" } = params;
+      const {
+        page = 1,
+        limit = 7,
+        waitingStatus = "all",
+        search,
+        minPrice,
+        maxPrice,
+        userEmail,
+        userName,
+      } = params;
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
         ...(waitingStatus !== "all" && { waitingStatus }),
+        ...(search ? { search: search.toString() } : {}),
+        ...(minPrice !== undefined && minPrice !== null && minPrice !== ""
+          ? { minPrice: String(minPrice) }
+          : {}),
+        ...(maxPrice !== undefined && maxPrice !== null && maxPrice !== ""
+          ? { maxPrice: String(maxPrice) }
+          : {}),
+        ...(userEmail ? { userEmail } : {}),
+        ...(userName ? { userName } : {}),
       });
 
       const response = await api.get(`/properties?${queryParams.toString()}`);
@@ -212,13 +235,20 @@ const adminService = {
    * Lấy người dùng với phân trang
    */
   getUsersPaginated: async (
-    params: PaginationParams
+    params: PaginationParams & {
+      search?: string;
+      email?: string;
+      phone?: string;
+    }
   ): Promise<PaginatedResponse<User>> => {
     try {
-      const { page = 1, limit = 7 } = params;
+      const { page = 1, limit = 7, search, email, phone } = params;
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
+        ...(search ? { search } : {}),
+        ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
       });
 
       const response = await api.get(`/users?${queryParams.toString()}`);

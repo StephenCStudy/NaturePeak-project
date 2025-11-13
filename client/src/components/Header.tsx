@@ -33,11 +33,17 @@ const Header: React.FC = () => {
         </div>
 
         <nav className="hidden md:flex gap-6 items-center text-sm font-medium text-[#134e4a]">
-          <Link to="/" className="hover:underline">
+          <Link to="/" className="hover:bg-gray-50">
             Trang chủ
           </Link>
-          <Link to="/posts" className="hover:underline">
+          <Link to="/posts" className="hover:bg-gray-50">
             Tin rao
+          </Link>
+          <Link
+            to="/agent/login"
+            className="px-3 py-2 text-sm font-medium text-[#134e4a]  rounded-lg hidden sm:inline hover:bg-gray-50"
+          >
+            Đại lý
           </Link>
           {role === "admin" && (
             <Link

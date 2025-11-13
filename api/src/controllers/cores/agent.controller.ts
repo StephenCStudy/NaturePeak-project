@@ -29,8 +29,32 @@ export const AgentController = {
    */
   getAgents: async (req: Request, res: Response) => {
     try {
+      // Hỗ trợ filter theo email nếu có query ?email=
+      const { email } = req.query as { email?: string };
+      if (email) {
+        const agent = await Agent.findOne({ email });
+        if (!agent) return res.status(404).json({ message: "Agent not found" });
+        return res.json(agent);
+      }
+
       const agents = await Agent.find();
       res.json(agents);
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  /**
+   * GET /api/agents/by-email?email=...
+   * Trả về 1 agent theo email (tiện cho client kiểm tra truy cập đại lý)
+   */
+  getAgentByEmail: async (req: Request, res: Response) => {
+    try {
+      const { email } = req.query as { email?: string };
+      if (!email) return res.status(400).json({ message: "Missing email" });
+      const agent = await Agent.findOne({ email });
+      if (!agent) return res.status(404).json({ message: "Agent not found" });
+      res.json(agent);
     } catch (err) {
       res.status(500).json({ message: (err as any).message });
     }

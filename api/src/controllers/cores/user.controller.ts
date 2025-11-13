@@ -6,20 +6,54 @@ import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 export const UserController = {
   getUsers: async (req: Request, res: Response) => {
     try {
-      const { page = "1", limit = "10" } = req.query as {
+      const {
+        page = "1",
+        limit = "10",
+        search,
+        email,
+        phone,
+      } = req.query as {
         page?: string;
         limit?: string;
+        search?: string;
+        email?: string;
+        phone?: string;
       };
 
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
+      // Build filter query
+      const filter: any = {};
+
+      // Search by name, email, or phone (general search)
+      if (search) {
+        const q = search.trim();
+        if (q.length > 0) {
+          filter.$or = [
+            { name: { $regex: q, $options: "i" } },
+            { email: { $regex: q, $options: "i" } },
+            { phone: { $regex: q, $options: "i" } },
+          ];
+        }
+      }
+
+      // Specific email filter
+      if (email) {
+        filter.email = { $regex: email.trim(), $options: "i" };
+      }
+
+      // Specific phone filter
+      if (phone) {
+        filter.phone = { $regex: phone.trim(), $options: "i" };
+      }
+
       // Get total count for pagination
-      const total = await User.countDocuments();
+      const total = await User.countDocuments(filter);
 
       // Get paginated users
-      const users = await User.find()
+      const users = await User.find(filter)
         .select("-password")
         .sort({ createdAt: -1 })
         .skip(skip)

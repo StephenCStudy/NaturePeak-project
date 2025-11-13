@@ -1,5 +1,7 @@
 import Property from "../../models/Property.js";
 import Agent from "../../models/Agent.js"; // Import Agent model để register schema
+import Message from "../../models/Message.js";
+import User from "../../models/User.js";
 import { Request, Response } from "express";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 
@@ -9,6 +11,11 @@ export const PropertyController = {
       const {
         page = "1",
         limit = "10",
+        agentId,
+        agentEmail,
+        userEmail,
+        userName,
+        contactName,
         waitingStatus,
         search,
         type,
@@ -52,6 +59,53 @@ export const PropertyController = {
             { title: { $regex: q, $options: "i" } },
             { location: { $regex: q, $options: "i" } },
           ];
+        }
+      }
+
+      // Filter properties by contact name who has messaged about the property
+      if (contactName) {
+        const q = contactName.trim();
+        if (q.length > 0) {
+          const propIds = await Message.distinct("propertyId", {
+            senderName: { $regex: q, $options: "i" },
+          });
+          // If no matches, force empty result
+          if (propIds.length === 0) {
+            filter._id = { $in: [] };
+          } else {
+            filter._id = { ...(filter._id || {}), $in: propIds };
+          }
+        }
+      }
+
+      // Filter theo agentId / agentEmail nếu có
+      if (agentId) {
+        filter.agent = agentId;
+      } else if (agentEmail) {
+        const agentDoc = await Agent.findOne({ email: agentEmail as string });
+        if (agentDoc) filter.agent = agentDoc._id;
+        else filter.agent = null; // để kết quả rỗng nếu email không tồn tại
+      }
+
+      // Filter theo người đăng (user) qua email hoặc tên nếu có
+      if (userEmail || userName) {
+        const uQuery: any = {};
+        if (userEmail) {
+          uQuery.email = {
+            $regex: (userEmail as string).trim(),
+            $options: "i",
+          };
+        }
+        if (userName) {
+          uQuery.name = { $regex: (userName as string).trim(), $options: "i" };
+        }
+        const users = await User.find(uQuery).select("_id");
+        if (users.length === 0) {
+          // Force empty result when no user matches
+          filter._id = { $in: [] };
+        } else {
+          const ids = users.map((u) => u._id);
+          filter.userId = { ...(filter.userId || {}), $in: ids };
         }
       }
 
@@ -149,7 +203,9 @@ export const PropertyController = {
 
   getProperty: async (req: Request, res: Response) => {
     try {
-      const property = await Property.findById(req.params.id).populate("agent");
+      const property = await Property.findById(req.params.id)
+        .populate("agent")
+        .populate("userId", "name email phone");
       if (!property)
         return res.status(404).json({ message: "Property not found" });
 

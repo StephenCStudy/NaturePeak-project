@@ -5,6 +5,7 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 // Public routes
+router.get("/by-email", AgentController.getAgentByEmail);
 router.get("/", AgentController.getAgents);
 router.get("/:id", AgentController.getAgent);
 
