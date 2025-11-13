@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   HiSearch,
@@ -57,6 +57,7 @@ const ListingPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 6; // page size
 
   // Filters
   const [filters, setFilters] = useState({
@@ -95,62 +96,51 @@ const ListingPage: React.FC = () => {
       if (filters.bathrooms) params.append("bathrooms", filters.bathrooms);
 
       params.append("page", currentPage.toString());
+      params.append("limit", itemsPerPage.toString());
       params.append("sort", sortBy);
 
-      // Gọi API thực tế
-      const response = await axios.get(`/api/properties?${params.toString()}`);
+      // Call backend API via api instance (auto baseURL & auth)
+      const response = await api.get(`/properties?${params.toString()}`);
       const data = response.data;
 
       // Map dữ liệu từ API, giữ nguyên các field thiếu
-      const mappedProperties: Property[] = (data.properties || data || []).map(
-        (p: any) => ({
-          _id: p._id || "",
-          title: p.title || "Chưa có tiêu đề",
-          price: p.price || 0,
-          area: p.area || 0,
-          location: p.location || "Chưa cập nhật",
-          type: p.type || "sale",
-          propertyType: p.propertyType || "house",
-          bedrooms: p.bedrooms,
-          bathrooms: p.bathrooms,
-          images: p.images || [],
-          createdAt: p.createdAt || new Date().toISOString(),
-          agent: p.agent ||
-            p.userId || { name: "Chưa cập nhật", phone: "Liên hệ" },
-          status: p.status || "available",
-          featured: p.featured || false,
-        })
+      const rawProps = data.properties || data || [];
+
+      const mappedProperties: Property[] = (rawProps || []).map((p: any) => ({
+        _id: p._id || "",
+        title: p.title || "Chưa có tiêu đề",
+        price: p.price || 0,
+        area: p.area || 0,
+        location: p.location || "Chưa cập nhật",
+        // Map backend `transactionType` (sell|rent) to frontend `type` (sale|rent)
+        type:
+          (p.transactionType
+            ? p.transactionType === "sell"
+              ? "sale"
+              : p.transactionType
+            : p.type) || "sale",
+        propertyType: p.propertyType || p.model || "house",
+        bedrooms: p.bedrooms,
+        bathrooms: p.bathrooms,
+        images: p.images || [],
+        createdAt: p.createdAt || new Date().toISOString(),
+        agent: p.agent ||
+          p.userId || { name: "Chưa cập nhật", phone: "Liên hệ" },
+        status: p.status || "available",
+        featured: p.featured || false,
+      }));
+      // Backend already sorted/paginated; set properties and pagination
+      setProperties(mappedProperties);
+      const pagination = data.pagination || {};
+      setTotalCount(pagination.total || mappedProperties.length);
+      setTotalPages(
+        pagination.totalPages ||
+          Math.ceil(
+            (pagination.total || mappedProperties.length) / itemsPerPage
+          )
       );
 
-      // Apply client-side sorting if needed
-      const sortedProperties = [...mappedProperties].sort((a, b) => {
-        switch (sortBy) {
-          case "newest":
-            return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-          case "oldest":
-            return (
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            );
-          case "price-asc":
-            return a.price - b.price;
-          case "price-desc":
-            return b.price - a.price;
-          case "area-asc":
-            return a.area - b.area;
-          case "area-desc":
-            return b.area - a.area;
-          default:
-            return 0;
-        }
-      });
-
-      setProperties(sortedProperties);
-      setTotalCount(data.total || sortedProperties.length);
-      setTotalPages(data.totalPages || Math.ceil(sortedProperties.length / 6));
-
-      console.log(`Loaded ${sortedProperties.length} properties successfully`);
+      console.log(`Loaded ${mappedProperties.length} properties successfully`);
     } catch (error: any) {
       // Xử lý lỗi im lặng, log vào console
       console.error("Failed to fetch properties:", error);
@@ -316,7 +306,6 @@ const ListingPage: React.FC = () => {
       });
 
       // Pagination
-      const itemsPerPage = 6;
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedData = mockData.slice(startIndex, endIndex);

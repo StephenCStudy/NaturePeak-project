@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../../models/User.js";
+import Agent from "../../models/Agent.js";
 import type { AuthRequest } from "../../middlewares/auth.middleware.js";
 import { revokeToken } from "../../middlewares/auth.middleware.js";
 
@@ -43,56 +44,84 @@ export const AuthController = {
       const { email, password, rememberMe } = req.body;
       if (!email || !password)
         return res.status(400).json({ message: "Missing email or password" });
-
+      // Try to find a regular user first
       const user = await User.findOne({ email });
-      if (!user)
-        return res.status(401).json({ message: "Invalid credentials" });
+      if (user) {
+        // Check if user is banned
+        if (user.isBanned) {
+          return res.status(403).json({
+            message:
+              "Tài khoản của bạn đã bị khóa do vi phạm điều khoản dịch vụ. Vui lòng liên hệ admin để được hỗ trợ.",
+            isBanned: true,
+          });
+        }
 
-      // Check if user is banned
-      if (user.isBanned) {
-        return res.status(403).json({
-          message:
-            "Tài khoản của bạn đã bị khóa do vi phạm điều khoản dịch vụ. Vui lòng liên hệ admin để được hỗ trợ.",
-          isBanned: true,
+        const match = await bcrypt.compare(password, user.password);
+        if (!match)
+          return res.status(401).json({ message: "Invalid credentials" });
+
+        const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+          expiresIn: "30m",
+        });
+
+        // Generate remember token if rememberMe is true
+        let rememberToken = null;
+        if (rememberMe) {
+          rememberToken = crypto.randomBytes(64).toString("hex");
+          const rememberTokenExpires = new Date();
+          rememberTokenExpires.setHours(rememberTokenExpires.getHours() + 24); // 24 giờ
+
+          user.rememberToken = rememberToken;
+          user.rememberTokenExpires = rememberTokenExpires;
+          await user.save();
+        } else {
+          // Clear remember token if not remembering
+          user.rememberToken = null as any;
+          user.rememberTokenExpires = null as any;
+          await user.save();
+        }
+
+        return res.json({
+          token,
+          rememberToken,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            avatarUrl: user.avatarUrl,
+            isBanned: user.isBanned,
+          },
         });
       }
 
-      const match = await bcrypt.compare(password, user.password);
-      if (!match)
+      // If no user found, try Agent collection (agents can login)
+      const agent = await Agent.findOne({ email });
+      if (!agent)
         return res.status(401).json({ message: "Invalid credentials" });
 
-      const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-        expiresIn: "30m", // 30 phút
+      const matchAgent = await bcrypt.compare(password, agent.password || "");
+      if (!matchAgent)
+        return res.status(401).json({ message: "Invalid credentials" });
+
+      // Sign token with role 'agent'
+      const token = jwt.sign({ id: agent._id, role: "agent" }, JWT_SECRET, {
+        expiresIn: "30m",
       });
 
-      // Generate remember token if rememberMe is true
-      let rememberToken = null;
-      if (rememberMe) {
-        rememberToken = crypto.randomBytes(64).toString("hex");
-        const rememberTokenExpires = new Date();
-        rememberTokenExpires.setHours(rememberTokenExpires.getHours() + 24); // 24 giờ
-
-        user.rememberToken = rememberToken;
-        user.rememberTokenExpires = rememberTokenExpires;
-        await user.save();
-      } else {
-        // Clear remember token if not remembering
-        user.rememberToken = null as any;
-        user.rememberTokenExpires = null as any;
-        await user.save();
-      }
-
-      res.json({
+      // Agents: no remember token support in this seed implementation
+      return res.json({
         token,
-        rememberToken,
+        rememberToken: null,
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          avatarUrl: user.avatarUrl,
-          isBanned: user.isBanned,
+          id: agent._id,
+          name: agent.name,
+          email: agent.email,
+          phone: agent.phone,
+          role: "agent",
+          avatarUrl: agent.agentcyImg || null,
+          isBanned: false,
         },
       });
     } catch (err) {

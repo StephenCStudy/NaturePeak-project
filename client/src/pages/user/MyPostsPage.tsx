@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { HiPencil, HiTrash, HiEye, HiEyeOff, HiPlus } from "react-icons/hi";
 import { toast } from "react-toastify";
+import api from "../../services/api";
 
 interface Post {
   _id: string;
@@ -10,14 +13,17 @@ interface Post {
   price: number;
   area: number;
   location: string;
-  type: string;
-  status: "pending" | "approved" | "rejected" | "hidden";
+  model: "flat" | "land";
+  transactionType: "sell" | "rent";
+  status: "active" | "hidden";
   images: string[];
   createdAt: string;
   views?: number;
+  waitingStatus?: "waiting" | "reviewed" | "block";
 }
 
 const MyPostsPage: React.FC = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
@@ -29,51 +35,17 @@ const MyPostsPage: React.FC = () => {
   const fetchMyPosts = async () => {
     setLoading(true);
     try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await api.get("/properties?page=1&limit=1000");
+      const allProperties = response.data.properties || [];
 
-      // Mock data
-      const mockPosts: Post[] = [
-        {
-          _id: "1",
-          title: "Nhà vườn ven đô, nhiều cây xanh",
-          price: 1200000000,
-          area: 120,
-          location: "Huyện Nhà Bè, TP.HCM",
-          type: "sale",
-          status: "approved",
-          images: ["/assets/sample1.svg"],
-          createdAt: "2024-11-05",
-          views: 125,
-        },
-        {
-          _id: "2",
-          title: "Lô đất mặt đường, thích hợp đầu tư",
-          price: 800000000,
-          area: 200,
-          location: "Thị trấn Củ Chi, TP.HCM",
-          type: "sale",
-          status: "pending",
-          images: ["/assets/sample2.svg"],
-          createdAt: "2024-11-07",
-          views: 45,
-        },
-        {
-          _id: "3",
-          title: "Căn hộ 2 phòng ngủ view sông",
-          price: 25000000,
-          area: 85,
-          location: "Quận 7, TP.HCM",
-          type: "rent",
-          status: "hidden",
-          images: ["/assets/sample1.svg"],
-          createdAt: "2024-10-20",
-          views: 89,
-        },
-      ];
+      // Filter properties của user hiện tại
+      const userProperties = allProperties.filter(
+        (prop: any) => prop.userId?._id === user?.id || prop.userId === user?.id
+      );
 
-      setPosts(mockPosts);
+      setPosts(userProperties);
     } catch (error) {
+      console.error("Failed to fetch posts:", error);
       toast.error("Không thể tải danh sách tin đăng");
     } finally {
       setLoading(false);
@@ -82,23 +54,49 @@ const MyPostsPage: React.FC = () => {
 
   const filteredPosts = posts.filter((post) => {
     if (filter === "all") return true;
-    return post.status === filter;
+    if (filter === "active") return post.status === "active";
+    if (filter === "hidden") return post.status === "hidden";
+    if (filter === "waiting") return post.waitingStatus === "waiting";
+    if (filter === "reviewed") return post.waitingStatus === "reviewed";
+    return false;
   });
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      pending: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-800" },
-      approved: { label: "Đã duyệt", color: "bg-green-100 text-green-800" },
-      rejected: { label: "Từ chối", color: "bg-red-100 text-red-800" },
-      hidden: { label: "Đã ẩn", color: "bg-gray-100 text-gray-800" },
-    };
+  const getStatusBadge = (status: string, waitingStatus?: string) => {
+    if (status === "hidden") {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+          Đã ẩn
+        </span>
+      );
+    }
 
-    const statusInfo = statusMap[status as keyof typeof statusMap];
+    if (waitingStatus === "waiting") {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+          Chờ duyệt
+        </span>
+      );
+    }
+
+    if (waitingStatus === "reviewed") {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+          Đã duyệt
+        </span>
+      );
+    }
+
+    if (waitingStatus === "block") {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+          Bị chặn
+        </span>
+      );
+    }
+
     return (
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}
-      >
-        {statusInfo.label}
+      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+        Hoạt động
       </span>
     );
   };
@@ -108,9 +106,10 @@ const MyPostsPage: React.FC = () => {
     currentStatus: string
   ) => {
     try {
-      const newStatus = currentStatus === "hidden" ? "approved" : "hidden";
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const newStatus = currentStatus === "hidden" ? "active" : "hidden";
+
+      // Call API to update status
+      await api.patch(`/properties/${postId}/status`, { status: newStatus });
 
       setPosts((prev) =>
         prev.map((post) =>
@@ -122,20 +121,20 @@ const MyPostsPage: React.FC = () => {
         newStatus === "hidden" ? "Đã ẩn tin đăng" : "Đã hiện tin đăng"
       );
     } catch (error) {
+      console.error("Failed to toggle visibility:", error);
       toast.error("Không thể cập nhật trạng thái");
     }
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa tin đăng này?")) return;
-
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Call API to delete
+      await api.delete(`/properties/${postId}`);
 
       setPosts((prev) => prev.filter((post) => post._id !== postId));
       toast.success("Đã xóa tin đăng");
     } catch (error) {
+      console.error("Failed to delete post:", error);
       toast.error("Không thể xóa tin đăng");
     }
   };
@@ -174,14 +173,15 @@ const MyPostsPage: React.FC = () => {
               {[
                 { key: "all", label: "Tất cả", count: posts.length },
                 {
-                  key: "approved",
-                  label: "Đã duyệt",
-                  count: posts.filter((p) => p.status === "approved").length,
+                  key: "active",
+                  label: "Đang hiển thị",
+                  count: posts.filter((p) => p.status === "active").length,
                 },
                 {
-                  key: "pending",
+                  key: "waiting",
                   label: "Chờ duyệt",
-                  count: posts.filter((p) => p.status === "pending").length,
+                  count: posts.filter((p) => p.waitingStatus === "waiting")
+                    .length,
                 },
                 {
                   key: "hidden",
@@ -227,9 +227,9 @@ const MyPostsPage: React.FC = () => {
               {filter === "all"
                 ? "Chưa có tin đăng nào"
                 : `Không có tin đăng ${
-                    filter === "approved"
-                      ? "đã duyệt"
-                      : filter === "pending"
+                    filter === "active"
+                      ? "đang hiển thị"
+                      : filter === "waiting"
                       ? "chờ duyệt"
                       : "đã ẩn"
                   }`}
@@ -283,7 +283,7 @@ const MyPostsPage: React.FC = () => {
 
                   {/* Status Badge */}
                   <div className="absolute top-3 left-3">
-                    {getStatusBadge(post.status)}
+                    {getStatusBadge(post.status, post.waitingStatus)}
                   </div>
 
                   {/* Views */}
@@ -323,8 +323,11 @@ const MyPostsPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-(--color-primary) font-bold text-lg">
-                          {(post.price / 1000000000).toFixed(1)} tỷ
-                          {post.type === "rent" && "/tháng"}
+                          {post.price && post.price > 0
+                            ? `${(post.price / 1000000000).toFixed(1)} tỷ${
+                                post.transactionType === "rent" ? "/tháng" : ""
+                              }`
+                            : "Thỏa thuận"}
                         </div>
                         <div className="text-sm text-muted">{post.area} m²</div>
                       </div>
@@ -360,8 +363,12 @@ const MyPostsPage: React.FC = () => {
                         post.status === "hidden"
                           ? "bg-green-100 text-green-700 hover:bg-green-500 hover:text-white"
                           : "bg-yellow-100 text-yellow-700 hover:bg-yellow-500 hover:text-white"
+                      } ${
+                        post.waitingStatus === "waiting"
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
-                      disabled={post.status === "pending"}
+                      disabled={post.waitingStatus === "waiting"}
                     >
                       {post.status === "hidden" ? (
                         <>
@@ -394,4 +401,3 @@ const MyPostsPage: React.FC = () => {
 };
 
 export default MyPostsPage;
-

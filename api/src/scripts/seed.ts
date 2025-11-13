@@ -15,11 +15,17 @@ const seed = async () => {
   await User.deleteMany({});
   await Message.deleteMany({});
 
+  // Hash passwords before creating users (and agents)
+  const hashedUserPassword = await bcrypt.hash("1234567890", 10);
+  const hashedAdminPassword = await bcrypt.hash("admin123", 10);
+  const hashedAgentPassword = await bcrypt.hash("agentpass123", 10);
+
   const agents = await Agent.create([
     {
       name: "Nguyen Van A",
       email: "nva@example.com",
       phone: "0987654321",
+      password: hashedAgentPassword,
       agency: "Dream Homes",
       agentcyImg:
         "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
@@ -28,15 +34,12 @@ const seed = async () => {
       name: "Tran Thi B",
       email: "tvb@example.com",
       phone: "0123456789",
+      password: hashedAgentPassword,
       agency: "Prime Realty",
       agentcyImg:
         "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828486/nha-pho-2-mat-tien-2-725_xqpy35.jpg",
     },
   ]);
-
-  // Hash passwords before creating users
-  const hashedUserPassword = await bcrypt.hash("1234567890", 10);
-  const hashedAdminPassword = await bcrypt.hash("admin123", 10);
 
   const users = await User.create([
     {
@@ -130,8 +133,6 @@ Pháp lý rõ ràng, sổ hồng chính chủ.`,
       images: [
         "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
         "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
-        "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
-        "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1762828409/OIP_jv9j9q.webp",
       ],
       bedrooms: 2,
       bathrooms: 2,
@@ -184,6 +185,10 @@ Thích hợp cho gia đình hoặc đầu tư kinh doanh.`,
       waitingStatus: "reviewed",
       views: 189,
       createdAt: new Date("2025-01-20"),
+      amenities: ["Gần chợ", "Gần trường học", "Bãi đỗ xe"],
+      contactName: "Tran Thi B",
+      contactPhone: "0123456789",
+      contactEmail: "tvb@example.com",
     },
     {
       title: "Chung cư mini giá rẻ cho thuê",
@@ -212,6 +217,10 @@ Phù hợp cho sinh viên và người đi làm.`,
       waitingStatus: "reviewed",
       views: 512,
       createdAt: new Date("2025-02-01"),
+      amenities: ["Điều hòa", "Nóng lạnh", "Internet miễn phí"],
+      contactName: "Người cho thuê",
+      contactPhone: "0900000000",
+      contactEmail: "rent@example.com",
     },
     {
       title: "Biệt thự sân vườn view biển",
@@ -241,6 +250,10 @@ Lý tưởng cho gia đình yêu thiên nhiên.`,
       waitingStatus: "reviewed",
       views: 98,
       createdAt: new Date("2025-02-10"),
+      amenities: ["Hồ bơi", "Sân vườn", "BBQ"],
+      contactName: "Chủ sở hữu",
+      contactPhone: "0911222333",
+      contactEmail: "owner@example.com",
     },
     {
       title: "Đất nền khu dân cư đã hoàn thiện hạ tầng",
@@ -301,6 +314,10 @@ Sẵn sàng dọn vào ở ngay.`,
       waitingStatus: "reviewed",
       views: 678,
       createdAt: new Date("2025-02-20"),
+      amenities: ["Máy giặt", "Tủ lạnh", "Điều hòa"],
+      contactName: "Quản lý tòa nhà",
+      contactPhone: "0901111222",
+      contactEmail: "manager@example.com",
     },
     {
       title: "Shophouse kinh doanh mặt tiền chợ",
@@ -330,6 +347,10 @@ Cơ hội đầu tư sinh lời ngay.`,
       waitingStatus: "reviewed",
       views: 423,
       createdAt: new Date("2025-03-01"),
+      amenities: ["Vị trí kinh doanh", "Bãi đỗ xe", "Lưu lượng người cao"],
+      contactName: "Chủ nhà",
+      contactPhone: "0902222333",
+      contactEmail: "shophouse@example.com",
     },
     {
       title: "Đất nền dự án ven sông, view cực đẹp",
@@ -359,6 +380,10 @@ Thanh toán linh hoạt, hỗ trợ vay ngân hàng 70%.`,
       waitingStatus: "reviewed",
       views: 567,
       createdAt: new Date("2025-03-05"),
+      amenities: ["Công viên", "Trường học quốc tế", "An ninh 24/7"],
+      contactName: "Phòng bán hàng dự án",
+      contactPhone: "0903333444",
+      contactEmail: "sales@example.com",
     },
   ]);
 
