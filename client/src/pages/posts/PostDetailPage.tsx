@@ -131,17 +131,14 @@ const PostDetailPage: React.FC = () => {
     if (!price) return "Liên hệ";
 
     if (price >= 1000000000) {
-      return `${(price / 1000000000).toFixed(1)} tỷ${
-        transactionType === "rent" ? "/tháng" : ""
-      }`;
+      return `${(price / 1000000000).toFixed(1)} tỷ${transactionType === "rent" ? "/tháng" : ""
+        }`;
     } else if (price >= 1000000) {
-      return `${(price / 1000000).toFixed(0)} triệu${
-        transactionType === "rent" ? "/tháng" : ""
-      }`;
+      return `${(price / 1000000).toFixed(0)} triệu${transactionType === "rent" ? "/tháng" : ""
+        }`;
     }
-    return `${price.toLocaleString()}${
-      transactionType === "rent" ? "/tháng" : ""
-    }`;
+    return `${price.toLocaleString()}${transactionType === "rent" ? "/tháng" : ""
+      }`;
   };
 
   const nextImage = () => {
@@ -265,11 +262,10 @@ const PostDetailPage: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                        currentImageIndex === index
-                          ? "border-(--color-primary)"
-                          : "border-gray-200 hover:border-(--color-primary)/50"
-                      }`}
+                      className={`h-20 rounded-lg overflow-hidden border-2 transition-all ${currentImageIndex === index
+                        ? "border-(--color-primary)"
+                        : "border-gray-200 hover:border-(--color-primary)/50"
+                        }`}
                     >
                       <img
                         src={image}
@@ -313,8 +309,8 @@ const PostDetailPage: React.FC = () => {
                       property.createdAt &&
                       (new Date().getTime() -
                         new Date(property.createdAt).getTime()) /
-                        (1000 * 60 * 60 * 24) <=
-                        7;
+                      (1000 * 60 * 60 * 24) <=
+                      7;
                     const isPopular = (property.views || 0) > 100;
 
                     if (isNew) {
@@ -334,21 +330,19 @@ const PostDetailPage: React.FC = () => {
                   })()}
 
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      property.transactionType === "sell"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${property.transactionType === "sell"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-blue-100 text-blue-800"
+                      }`}
                   >
                     {property.transactionType === "sell" ? "Bán" : "Cho thuê"}
                   </span>
 
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      property.model === "flat"
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${property.model === "flat"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-amber-100 text-amber-800"
+                      }`}
                   >
                     {property.model === "flat" ? "Căn hộ" : "Đất nền"}
                   </span>
@@ -568,6 +562,15 @@ const PostDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* google map  */}
+            <iframe
+              src={`https://www.google.com/maps?q=${property.location}&output=embed`}
+              width="400"
+              height="350"
+              className="mt-5 rounded-2xl shadow-2xl"
+              loading="lazy">
+            </iframe>
           </div>
         </div>
       </div>

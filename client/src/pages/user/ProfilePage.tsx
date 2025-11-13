@@ -139,7 +139,7 @@ const ProfilePage: React.FC = () => {
   const getAvatarUrl = () => {
     return (
       (user as any)?.avatarUrl ||
-      user?.avatar ||
+      user?.avatarUrl ||
       "https://res.cloudinary.com/dlkwv0qaq/image/upload/v1761876296/default-avatar-profile_bse2jk.webp"
     );
   };
