@@ -1,14 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 import { uploadToCloudinary } from "../../utils/cores/upload_image.cloudinary";
+import { useUser } from "../../context/UserContext";
 import {
   HiCheckCircle,
   HiHome,
   HiPhotograph,
   HiDocumentText,
   HiLocationMarker,
+  HiUser,
+  HiOfficeBuilding,
 } from "react-icons/hi";
 
 interface FormData {
@@ -32,17 +35,29 @@ interface FormData {
   images: string[];
 
   // Step 5: Thông tin liên hệ
+  contactType: "agent" | "personal"; // Agent hoặc Cá nhân
+  agentId: string; // ID của agent được chọn
   contactName: string;
   contactPhone: string;
   contactEmail: string;
 }
 
+interface Agent {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  agency?: string;
+}
+
 const AddPostPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>([]);
 
   const [formData, setFormData] = useState<FormData>({
     model: "",
@@ -56,6 +71,8 @@ const AddPostPage: React.FC = () => {
     bedrooms: "",
     bathrooms: "",
     images: [],
+    contactType: "personal", // Mặc định là cá nhân
+    agentId: "",
     contactName: "",
     contactPhone: "",
     contactEmail: "",
@@ -68,6 +85,50 @@ const AddPostPage: React.FC = () => {
     { number: 4, title: "Hình ảnh", icon: HiPhotograph },
     { number: 5, title: "Liên hệ", icon: HiDocumentText },
   ];
+
+  // Load agents and user info on mount
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        const response = await api.get("/agents");
+        setAgents(response.data);
+      } catch (error) {
+        console.error("Failed to load agents:", error);
+      }
+    };
+    loadAgents();
+
+    // Auto-fill user info if personal contact type
+    if (user && formData.contactType === "personal") {
+      setFormData((prev) => ({
+        ...prev,
+        contactName: user.name || "",
+        contactPhone: (user as any).phone || "",
+        contactEmail: user.email || "",
+      }));
+    }
+  }, []);
+
+  // Auto-fill user info when switching to personal
+  useEffect(() => {
+    if (formData.contactType === "personal" && user) {
+      setFormData((prev) => ({
+        ...prev,
+        contactName: user.name || "",
+        contactPhone: (user as any).phone || "",
+        contactEmail: user.email || "",
+        agentId: "",
+      }));
+    } else if (formData.contactType === "agent") {
+      // Clear personal info when switching to agent
+      setFormData((prev) => ({
+        ...prev,
+        contactName: "",
+        contactPhone: "",
+        contactEmail: "",
+      }));
+    }
+  }, [formData.contactType, user]);
 
   // Danh sách tiện ích xung quanh
   const amenitiesList = [
@@ -162,26 +223,35 @@ const AddPostPage: React.FC = () => {
         return true;
 
       case 5:
-        if (!formData.contactName.trim()) {
-          toast.error("Vui lòng nhập tên người liên hệ");
-          return false;
-        }
-        if (!formData.contactPhone.trim()) {
-          toast.error("Vui lòng nhập số điện thoại liên hệ");
-          return false;
-        }
-        // Validate phone number (10-11 digits)
-        const phoneRegex = /^[0-9]{10,11}$/;
-        if (!phoneRegex.test(formData.contactPhone.trim())) {
-          toast.error("Số điện thoại không hợp lệ (10-11 chữ số)");
-          return false;
-        }
-        // Email is optional, but if provided, should be valid
-        if (formData.contactEmail.trim()) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(formData.contactEmail.trim())) {
-            toast.error("Email không hợp lệ");
+        // Validate based on contact type
+        if (formData.contactType === "agent") {
+          if (!formData.agentId) {
+            toast.error("Vui lòng chọn đại lý");
             return false;
+          }
+        } else {
+          // Personal contact validation
+          if (!formData.contactName.trim()) {
+            toast.error("Vui lòng nhập tên người liên hệ");
+            return false;
+          }
+          if (!formData.contactPhone.trim()) {
+            toast.error("Vui lòng nhập số điện thoại liên hệ");
+            return false;
+          }
+          // Validate phone number (10-11 digits)
+          const phoneRegex = /^[0-9]{10,11}$/;
+          if (!phoneRegex.test(formData.contactPhone.trim())) {
+            toast.error("Số điện thoại không hợp lệ (10-11 chữ số)");
+            return false;
+          }
+          // Email is optional, but if provided, should be valid
+          if (formData.contactEmail.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.contactEmail.trim())) {
+              toast.error("Email không hợp lệ");
+              return false;
+            }
           }
         }
         return true;
@@ -266,7 +336,7 @@ const AddPostPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const propertyData = {
+      const propertyData: any = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
@@ -280,12 +350,18 @@ const AddPostPage: React.FC = () => {
         bathrooms:
           formData.model === "flat" ? parseInt(formData.bathrooms) || 0 : 0,
         amenities: formData.amenities,
-        contactName: formData.contactName.trim(),
-        contactPhone: formData.contactPhone.trim(),
-        contactEmail: formData.contactEmail.trim() || undefined,
         status: "active",
         waitingStatus: "waiting", // Chờ admin duyệt
       };
+
+      // Add contact info based on type
+      if (formData.contactType === "agent") {
+        propertyData.agent = formData.agentId;
+      } else {
+        propertyData.contactName = formData.contactName.trim();
+        propertyData.contactPhone = formData.contactPhone.trim();
+        propertyData.contactEmail = formData.contactEmail.trim() || undefined;
+      }
 
       await api.post("/properties", propertyData);
 
@@ -756,50 +832,188 @@ const AddPostPage: React.FC = () => {
                 </p>
               </div>
 
+              {/* Contact Type Selection */}
               <div>
-                <label className="block text-sm font-semibold text-[#083344] mb-2">
-                  Tên người liên hệ <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold text-[#083344] mb-3">
+                  Chọn loại thông tin liên hệ{" "}
+                  <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={formData.contactName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, contactName: e.target.value })
-                  }
-                  placeholder="VD: Nguyễn Văn A"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, contactType: "agent" })
+                    }
+                    className={`p-6 border-2 rounded-xl transition-all duration-300 ${
+                      formData.contactType === "agent"
+                        ? "border-(--color-primary) bg-(--color-pastel)"
+                        : "border-gray-200 hover:border-(--color-primary)"
+                    }`}
+                  >
+                    <div className="text-center">
+                      <HiOfficeBuilding
+                        className={`w-12 h-12 mx-auto mb-3 ${
+                          formData.contactType === "agent"
+                            ? "text-(--color-primary)"
+                            : "text-gray-400"
+                        }`}
+                      />
+                      <h3 className="font-semibold text-[#083344] mb-1">
+                        Đại lý
+                      </h3>
+                      <p className="text-sm text-muted">
+                        Chọn đại lý có sẵn trong hệ thống
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, contactType: "personal" })
+                    }
+                    className={`p-6 border-2 rounded-xl transition-all duration-300 ${
+                      formData.contactType === "personal"
+                        ? "border-(--color-primary) bg-(--color-pastel)"
+                        : "border-gray-200 hover:border-(--color-primary)"
+                    }`}
+                  >
+                    <div className="text-center">
+                      <HiUser
+                        className={`w-12 h-12 mx-auto mb-3 ${
+                          formData.contactType === "personal"
+                            ? "text-(--color-primary)"
+                            : "text-gray-400"
+                        }`}
+                      />
+                      <h3 className="font-semibold text-[#083344] mb-1">
+                        Cá nhân
+                      </h3>
+                      <p className="text-sm text-muted">
+                        Sử dụng thông tin cá nhân của bạn
+                      </p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-[#083344] mb-2">
-                  Số điện thoại <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={formData.contactPhone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, contactPhone: e.target.value })
-                  }
-                  placeholder="VD: 0987654321"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
-                />
-              </div>
+              {/* Agent Selection */}
+              {formData.contactType === "agent" && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#083344] mb-2">
+                    Chọn đại lý <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.agentId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, agentId: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
+                  >
+                    <option value="">-- Chọn đại lý --</option>
+                    {agents.map((agent) => (
+                      <option key={agent._id} value={agent._id}>
+                        {agent.name} - {agent.phone}
+                        {agent.agency ? ` (${agent.agency})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {agents.length === 0 && (
+                    <p className="text-xs text-muted mt-2">
+                      Chưa có đại lý trong hệ thống. Vui lòng chọn "Cá nhân".
+                    </p>
+                  )}
+                  {formData.agentId && (
+                    <div className="mt-3 p-3 bg-(--color-pastel) rounded-lg">
+                      {(() => {
+                        const selectedAgent = agents.find(
+                          (a) => a._id === formData.agentId
+                        );
+                        return selectedAgent ? (
+                          <div className="text-sm text-[#083344]">
+                            <p>
+                              <strong>Tên:</strong> {selectedAgent.name}
+                            </p>
+                            <p>
+                              <strong>SĐT:</strong> {selectedAgent.phone}
+                            </p>
+                            <p>
+                              <strong>Email:</strong> {selectedAgent.email}
+                            </p>
+                            {selectedAgent.agency && (
+                              <p>
+                                <strong>Công ty:</strong> {selectedAgent.agency}
+                              </p>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div>
-                <label className="block text-sm font-semibold text-[#083344] mb-2">
-                  Email (không bắt buộc)
-                </label>
-                <input
-                  type="email"
-                  value={formData.contactEmail}
-                  onChange={(e) =>
-                    setFormData({ ...formData, contactEmail: e.target.value })
-                  }
-                  placeholder="VD: example@gmail.com"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
-                />
-              </div>
+              {/* Personal Contact Info */}
+              {formData.contactType === "personal" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#083344] mb-2">
+                      Tên người liên hệ <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.contactName}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactName: e.target.value,
+                        })
+                      }
+                      placeholder="VD: Nguyễn Văn A"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
+                    />
+                    <p className="text-xs text-muted mt-1">
+                      Tự động điền từ thông tin tài khoản (có thể chỉnh sửa)
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#083344] mb-2">
+                      Số điện thoại <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.contactPhone}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactPhone: e.target.value,
+                        })
+                      }
+                      placeholder="VD: 0987654321"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#083344] mb-2">
+                      Email (không bắt buộc)
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.contactEmail}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contactEmail: e.target.value,
+                        })
+                      }
+                      placeholder="VD: example@gmail.com"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-(--color-primary) focus:outline-none"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -900,23 +1114,62 @@ const AddPostPage: React.FC = () => {
                 </div>
               )}
 
-              {formData.contactName && (
+              {(formData.contactName || formData.agentId) && (
                 <div className="pt-2 border-t border-gray-200">
                   <p className="font-semibold text-[#083344] mb-1">
                     Thông tin liên hệ
                   </p>
-                  <p>
-                    <strong>Người liên hệ:</strong> {formData.contactName}
-                  </p>
-                  {formData.contactPhone && (
-                    <p>
-                      <strong>Số điện thoại:</strong> {formData.contactPhone}
-                    </p>
+                  {formData.contactType === "agent" && formData.agentId && (
+                    <>
+                      {(() => {
+                        const selectedAgent = agents.find(
+                          (a) => a._id === formData.agentId
+                        );
+                        return selectedAgent ? (
+                          <>
+                            <p>
+                              <strong>Loại:</strong> Đại lý
+                            </p>
+                            <p>
+                              <strong>Tên đại lý:</strong> {selectedAgent.name}
+                            </p>
+                            <p>
+                              <strong>Số điện thoại:</strong>{" "}
+                              {selectedAgent.phone}
+                            </p>
+                            <p>
+                              <strong>Email:</strong> {selectedAgent.email}
+                            </p>
+                            {selectedAgent.agency && (
+                              <p>
+                                <strong>Công ty:</strong> {selectedAgent.agency}
+                              </p>
+                            )}
+                          </>
+                        ) : null;
+                      })()}
+                    </>
                   )}
-                  {formData.contactEmail && (
-                    <p>
-                      <strong>Email:</strong> {formData.contactEmail}
-                    </p>
+                  {formData.contactType === "personal" && (
+                    <>
+                      <p>
+                        <strong>Loại:</strong> Cá nhân
+                      </p>
+                      <p>
+                        <strong>Người liên hệ:</strong> {formData.contactName}
+                      </p>
+                      {formData.contactPhone && (
+                        <p>
+                          <strong>Số điện thoại:</strong>{" "}
+                          {formData.contactPhone}
+                        </p>
+                      )}
+                      {formData.contactEmail && (
+                        <p>
+                          <strong>Email:</strong> {formData.contactEmail}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
