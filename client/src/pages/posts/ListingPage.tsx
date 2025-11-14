@@ -573,31 +573,27 @@ const ListingPage: React.FC = () => {
                 <option value="4">4+ phòng</option>
               </select>
 
-              <div className="flex gap-2 items-stretch">
-                <input
-                  type="number"
-                  placeholder="Giá từ"
-                  value={pendingFilters.minPrice}
-                  onChange={(e) =>
-                    handlePendingFilterChange("minPrice", e.target.value)
-                  }
-                  className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
-                />
-                <input
-                  type="number"
-                  placeholder="Giá đến"
-                  value={pendingFilters.maxPrice}
-                  onChange={(e) =>
-                    handlePendingFilterChange("maxPrice", e.target.value)
-                  }
-                  className="flex-1 border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
-                />
-              </div>
+              <input
+                type="number"
+                placeholder="Giá từ"
+                value={pendingFilters.minPrice}
+                onChange={(e) =>
+                  handlePendingFilterChange("minPrice", e.target.value)
+                }
+                className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
+              />
 
-              <div
-                className="flex gap-2 items-stretch"
-                style={{ marginLeft: "75px" }}
-              >
+              <input
+                type="number"
+                placeholder="Giá đến"
+                value={pendingFilters.maxPrice}
+                onChange={(e) =>
+                  handlePendingFilterChange("maxPrice", e.target.value)
+                }
+                className="w-full border border-gray-200 rounded-lg px-3 text-sm bg-white focus:border-blue-500 outline-none transition-colors h-10"
+              />
+
+              <div className="flex gap-2 items-stretch">
                 <input
                   type="number"
                   placeholder="DT từ (m²)"
@@ -618,7 +614,7 @@ const ListingPage: React.FC = () => {
                 />
               </div>
 
-              <div className="lg:col-span-2 flex items-center justify-end gap-3">
+              <div className="lg:col-span-4 flex items-center justify-end gap-3">
                 <button
                   onClick={applyPendingFilters}
                   className="px-6 h-10 rounded-lg text-sm bg-(--color-primary) text-white hover:opacity-90 transition-colors"

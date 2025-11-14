@@ -103,7 +103,10 @@ const adminService = {
    */
   getAllProperties: async (): Promise<Property[]> => {
     try {
-      const response = await api.get("/properties?limit=1000");
+      // Thêm waitingStatus=all để admin lấy tất cả bài đăng
+      const response = await api.get(
+        "/properties?limit=1000&waitingStatus=all"
+      );
       // Backend trả về { properties: [], pagination: {} } nên cần lấy properties
       return response.data.properties || response.data;
     } catch (error: any) {

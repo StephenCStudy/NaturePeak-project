@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
               href="https://facebook.com"
               target="_blank"
               rel="noreferrer"
-              className="text-(--color-primary) hover:opacity-80"
+              className="text-(--color-primary) transition-all duration-300 hover:scale-125 hover:text-blue-600 hover:-translate-y-1"
               aria-label="Facebook"
             >
               <FaFacebookSquare size={22} />
@@ -27,14 +27,14 @@ const Footer: React.FC = () => {
               href="https://youtube.com"
               target="_blank"
               rel="noreferrer"
-              className="text-(--color-primary) hover:opacity-80"
+              className="text-(--color-primary) transition-all duration-300 hover:scale-125 hover:text-red-600 hover:-translate-y-1"
               aria-label="YouTube"
             >
               <FaYoutube size={22} />
             </a>
             <a
               href="mailto:support@realestatepro.local"
-              className="text-(--color-primary) hover:opacity-80"
+              className="text-(--color-primary) transition-all duration-300 hover:scale-125 hover:text-green-600 hover:-translate-y-1"
               aria-label="Email"
             >
               <FaEnvelope size={22} />
@@ -49,8 +49,11 @@ const Footer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/terms")}
-                className="hover:underline text-[#134e4a]"
+                className="text-[#134e4a] transition-all duration-300 hover:text-(--color-primary) hover:translate-x-2 hover:underline inline-flex items-center gap-1 group"
               >
+                <span className="transition-transform duration-300 group-hover:scale-110">
+                  →
+                </span>
                 Điều khoản sử dụng
               </button>
             </li>
@@ -58,8 +61,11 @@ const Footer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/privacy")}
-                className="hover:underline text-[#134e4a]"
+                className="text-[#134e4a] transition-all duration-300 hover:text-(--color-primary) hover:translate-x-2 hover:underline inline-flex items-center gap-1 group"
               >
+                <span className="transition-transform duration-300 group-hover:scale-110">
+                  →
+                </span>
                 Chính sách bảo mật
               </button>
             </li>
@@ -67,8 +73,11 @@ const Footer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/support")}
-                className="hover:underline text-[#134e4a]"
+                className="text-[#134e4a] transition-all duration-300 hover:text-(--color-primary) hover:translate-x-2 hover:underline inline-flex items-center gap-1 group"
               >
+                <span className="transition-transform duration-300 group-hover:scale-110">
+                  →
+                </span>
                 Hỗ trợ khách hàng
               </button>
             </li>
@@ -85,7 +94,7 @@ const Footer: React.FC = () => {
             Email:{" "}
             <a
               href="mailto:support@realestatepro.local"
-              className="hover:underline"
+              className="transition-all duration-300 hover:text-(--color-primary) hover:underline hover:font-semibold"
             >
               support@realestatepro.local
             </a>

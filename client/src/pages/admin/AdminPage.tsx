@@ -205,6 +205,23 @@ const AdminPage: React.FC = () => {
     };
   };
 
+  // Function riêng để refresh filter counts
+  const refreshFilterCounts = async () => {
+    try {
+      const apiProperties = await adminService.getAllProperties();
+      const apiStats = adminService.calculateStats(apiProperties, []);
+
+      setFilterCounts({
+        all: apiStats.totalProperties,
+        pending: apiStats.waitingProperties,
+        approved: apiStats.reviewedProperties,
+        rejected: apiStats.blockedProperties,
+      });
+    } catch (error: unknown) {
+      console.error("Error refreshing filter counts:", error);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -346,6 +363,8 @@ const AdminPage: React.FC = () => {
   useEffect(() => {
     if (activeTab === "properties") {
       fetchProperties();
+      // Refresh filter counts khi vào tab properties
+      refreshFilterCounts();
     }
   }, [activeTab, fetchProperties]);
 
@@ -377,8 +396,8 @@ const AdminPage: React.FC = () => {
         toast.success(actionText);
       }
 
-      // Refresh properties list and stats
-      await Promise.all([fetchProperties(), fetchData()]);
+      // Refresh properties list and filter counts
+      await Promise.all([refreshFilterCounts(), fetchProperties()]);
     } catch (error: unknown) {
       console.error("Error handling property action:", error);
       toast.error(getErrorMessage(error, "Không thể thực hiện hành động"));

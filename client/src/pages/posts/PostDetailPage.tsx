@@ -81,15 +81,48 @@ const PostDetailPage: React.FC = () => {
       return;
     }
 
+    if (!property) {
+      toast.error("Không tìm thấy thông tin bất động sản");
+      return;
+    }
+
+    // Xác định recipient từ thông tin liên hệ trong bài đăng
+    const contactInfo =
+      property.contactName && property.contactPhone
+        ? {
+            type: "contact" as const,
+            name: property.contactName,
+            phone: property.contactPhone,
+            email: property.contactEmail,
+          }
+        : property.agent
+        ? {
+            type: "agent" as const,
+            id: property.agent._id,
+            name: property.agent.name,
+            phone: property.agent.phone,
+            email: property.agent.email,
+          }
+        : property.userId && typeof property.userId === "object"
+        ? {
+            type: "user" as const,
+            id: (property.userId as any)._id,
+            name: (property.userId as any).name,
+            phone: (property.userId as any).phone,
+            email: (property.userId as any).email,
+          }
+        : null;
+
     try {
-      // Gọi API gửi tin nhắn (backend sẽ lấy thông tin từ user đang đăng nhập)
+      // Gửi tin nhắn với thông tin người nhận từ bài đăng
       await api.post("/messages", {
-        propertyId: property?._id,
+        propertyId: property._id,
         message: contactForm.message,
+        recipient: contactInfo,
       });
 
       toast.success(
-        "Gửi tin nhắn thành công! Chủ bất động sản sẽ liên hệ với bạn sớm."
+        `Gửi tin nhắn thành công đến ${contactInfo?.name || "người liên hệ"}!`
       );
       setShowContactForm(false);
       setContactForm({ message: "" });
