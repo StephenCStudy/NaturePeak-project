@@ -124,17 +124,21 @@ const adminService = {
       const {
         page = 1,
         limit = 7,
-        waitingStatus = "all",
+        waitingStatus,
         search,
         minPrice,
         maxPrice,
         userEmail,
         userName,
       } = params;
+
+      const waitingStatusFilter =
+        waitingStatus && waitingStatus !== "all" ? waitingStatus : undefined;
+
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        ...(waitingStatus !== "all" && { waitingStatus }),
+        ...(waitingStatusFilter ? { waitingStatus: waitingStatusFilter } : {}),
         ...(search ? { search: search.toString() } : {}),
         ...(minPrice !== undefined && minPrice !== null && minPrice !== ""
           ? { minPrice: String(minPrice) }

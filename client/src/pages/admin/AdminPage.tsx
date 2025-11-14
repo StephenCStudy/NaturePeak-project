@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 // import { useNavigate } from "react-router-dom"; // Reserved for future
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
@@ -17,6 +17,7 @@ import {
   HiChevronLeft,
   HiChevronRight,
 } from "react-icons/hi";
+import type { IconType } from "react-icons";
 import { toast } from "react-toastify";
 import adminService from "../../services/adminService";
 import type {
@@ -59,35 +60,63 @@ interface User {
 interface Stats {
   totalProperties: number;
   pendingProperties: number;
+  approvedProperties: number;
+  rejectedProperties: number;
   activeUsers: number;
   totalViews: number;
   locationStats: { location: string; count: number }[];
   recentActivity: { date: string; properties: number; users: number }[];
 }
 
+type AdminTab = "dashboard" | "properties" | "users";
+type PropertyFilter = "all" | "pending" | "approved" | "rejected";
+
+const NAVIGATION_TABS: Array<{
+  key: AdminTab;
+  label: string;
+  icon: IconType;
+}> = [
+  { key: "dashboard", label: "Tổng quan", icon: HiChartBar },
+  { key: "properties", label: "Quản lý tin đăng", icon: HiHome },
+  { key: "users", label: "Quản lý người dùng", icon: HiUsers },
+];
+
+const PROPERTY_FILTER_TABS: Array<{ key: PropertyFilter; label: string }> = [
+  { key: "all", label: "Tất cả" },
+  { key: "pending", label: "Chờ duyệt" },
+  { key: "approved", label: "Đã duyệt" },
+  { key: "rejected", label: "Từ chối" },
+];
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
+
 const AdminPage: React.FC = () => {
   // const navigate = useNavigate(); // Reserved for future use
-  const [activeTab, setActiveTab] = useState<
-    "dashboard" | "properties" | "users"
-  >("dashboard");
+  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [properties, setProperties] = useState<Property[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<
-    "all" | "pending" | "approved" | "rejected"
-  >("all");
+  const [filter, setFilter] = useState<PropertyFilter>("all");
 
   // Search/filter controls for properties
   const [searchKeyword, setSearchKeyword] = useState("");
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [searchKeywordInput, setSearchKeywordInput] = useState("");
+  const [minPriceInput, setMinPriceInput] = useState<string>("");
+  const [maxPriceInput, setMaxPriceInput] = useState<string>("");
+  const [userEmailInput, setUserEmailInput] = useState<string>("");
 
   // Search/filter controls for users
   const [userSearchKeyword, setUserSearchKeyword] = useState("");
   const [userSearchEmail, setUserSearchEmail] = useState("");
   const [userSearchPhone, setUserSearchPhone] = useState("");
+  const [userSearchKeywordInput, setUserSearchKeywordInput] = useState("");
+  const [userSearchEmailInput, setUserSearchEmailInput] = useState("");
+  const [userSearchPhoneInput, setUserSearchPhoneInput] = useState("");
 
   // Pagination states
   const [locationPage, setLocationPage] = useState(1); // trang hiện tại quản lý khu vực
@@ -107,37 +136,13 @@ const AdminPage: React.FC = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const USERS_PER_PAGE = 7;
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Fetch properties when filter or page changes
-  useEffect(() => {
-    if (activeTab === "properties") {
-      fetchProperties();
-    }
-  }, [
-    filter,
-    propertyPage,
-    activeTab,
-    searchKeyword,
-    minPrice,
-    maxPrice,
-    userEmail,
-  ]);
-
-  // Fetch users when page changes or search terms change
-  useEffect(() => {
-    if (activeTab === "users") {
-      fetchUsers();
-    }
-  }, [
-    userPage,
-    activeTab,
-    userSearchKeyword,
-    userSearchEmail,
-    userSearchPhone,
-  ]);
+  // Stats count cho từng filter
+  const [filterCounts, setFilterCounts] = useState({
+    all: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
 
   // Helper function để chuyển đổi dữ liệu từ API sang format UI
   const transformApiPropertyToUI = (apiProp: ApiProperty): Property => {
@@ -200,7 +205,7 @@ const AdminPage: React.FC = () => {
     };
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Gọi API thật từ backend (chỉ dùng cho stats)
@@ -232,38 +237,53 @@ const AdminPage: React.FC = () => {
 
       const uiStats: Stats = {
         totalProperties: apiStats.totalProperties,
-        pendingProperties: apiStats.pendingProperties,
+        pendingProperties: apiStats.waitingProperties,
+        approvedProperties: apiStats.reviewedProperties,
+        rejectedProperties: apiStats.blockedProperties,
         activeUsers: apiStats.activeUsers,
         totalViews: apiStats.totalViews,
         locationStats,
         recentActivity,
       };
-
       setUsers(transformedUsers);
       setStats(uiStats);
-    } catch (error: any) {
+
+      // Cập nhật filter counts từ stats
+      setFilterCounts({
+        all: apiStats.totalProperties,
+        pending: apiStats.waitingProperties,
+        approved: apiStats.reviewedProperties,
+        rejected: apiStats.blockedProperties,
+      });
+    } catch (error: unknown) {
       console.error("Error fetching data:", error);
-      toast.error(error.message || "Không thể tải dữ liệu");
+      toast.error(getErrorMessage(error, "Không thể tải dữ liệu"));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchProperties = async () => {
+  const fetchProperties = useCallback(async () => {
     setLoading(true);
     try {
       // Convert filter to waitingStatus
-      const waitingStatusMap = {
-        all: "all",
+      const waitingStatusMap: Record<
+        PropertyFilter,
+        "waiting" | "reviewed" | "block" | null
+      > = {
+        all: null,
         pending: "waiting",
         approved: "reviewed",
         rejected: "block",
-      } as const;
+      };
+
+      const waitingStatusFilter = waitingStatusMap[filter];
 
       const response = await adminService.getPropertiesPaginated({
         page: propertyPage,
         limit: PROPERTIES_PER_PAGE,
-        waitingStatus: waitingStatusMap[filter],
+        waitingStatus:
+          waitingStatusFilter === null ? undefined : waitingStatusFilter,
         search: searchKeyword || undefined,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,
@@ -273,19 +293,18 @@ const AdminPage: React.FC = () => {
       const transformedProperties = (response.properties || []).map(
         transformApiPropertyToUI
       );
-
       setProperties(transformedProperties);
       setTotalPropertyPages(response.pagination.totalPages);
       setTotalProperties(response.pagination.total);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching properties:", error);
-      toast.error(error.message || "Không thể tải danh sách tin đăng");
+      toast.error(getErrorMessage(error, "Không thể tải danh sách tin đăng"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, propertyPage, searchKeyword, minPrice, maxPrice, userEmail]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await adminService.getUsersPaginated({
@@ -309,17 +328,32 @@ const AdminPage: React.FC = () => {
       const transformedUsers = (response.users || []).map((user) =>
         transformApiUserToUI(user, userPostsCount[user._id] || 0)
       );
-
       setUsers(transformedUsers);
       setTotalUserPages(response.pagination.totalPages);
       setTotalUsers(response.pagination.total);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching users:", error);
-      toast.error(error.message || "Không thể tải danh sách người dùng");
+      toast.error(getErrorMessage(error, "Không thể tải danh sách người dùng"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [userPage, userSearchKeyword, userSearchEmail, userSearchPhone]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    if (activeTab === "properties") {
+      fetchProperties();
+    }
+  }, [activeTab, fetchProperties]);
+
+  useEffect(() => {
+    if (activeTab === "users") {
+      fetchUsers();
+    }
+  }, [activeTab, fetchUsers]);
 
   const handlePropertyAction = async (
     propertyId: string,
@@ -345,9 +379,9 @@ const AdminPage: React.FC = () => {
 
       // Refresh properties list and stats
       await Promise.all([fetchProperties(), fetchData()]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error handling property action:", error);
-      toast.error(error.message || "Không thể thực hiện hành động");
+      toast.error(getErrorMessage(error, "Không thể thực hiện hành động"));
     }
   };
 
@@ -367,10 +401,51 @@ const AdminPage: React.FC = () => {
 
       // Refresh users list and stats
       await Promise.all([fetchUsers(), fetchData()]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error handling user action:", error);
-      toast.error(error.message || "Không thể thực hiện hành động");
+      toast.error(getErrorMessage(error, "Không thể thực hiện hành động"));
     }
+  };
+
+  const handlePropertySearchSubmit = (
+    event?: React.FormEvent<HTMLFormElement>
+  ) => {
+    event?.preventDefault();
+    setPropertyPage(1);
+    setSearchKeyword(searchKeywordInput.trim());
+    setMinPrice(minPriceInput);
+    setMaxPrice(maxPriceInput);
+    setUserEmail(userEmailInput.trim());
+  };
+
+  const handlePropertySearchReset = () => {
+    setSearchKeyword("");
+    setMinPrice("");
+    setMaxPrice("");
+    setUserEmail("");
+    setSearchKeywordInput("");
+    setMinPriceInput("");
+    setMaxPriceInput("");
+    setUserEmailInput("");
+    setPropertyPage(1);
+  };
+
+  const handleUserSearchSubmit = (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    setUserPage(1);
+    setUserSearchKeyword(userSearchKeywordInput.trim());
+    setUserSearchEmail(userSearchEmailInput.trim());
+    setUserSearchPhone(userSearchPhoneInput.trim());
+  };
+
+  const handleUserSearchReset = () => {
+    setUserSearchKeyword("");
+    setUserSearchEmail("");
+    setUserSearchPhone("");
+    setUserSearchKeywordInput("");
+    setUserSearchEmailInput("");
+    setUserSearchPhoneInput("");
+    setUserPage(1);
   };
 
   // Remove filteredProperties - backend handles filtering
@@ -392,6 +467,26 @@ const AdminPage: React.FC = () => {
     return `${price.toLocaleString()}${type === "rent" ? "/tháng" : ""}`;
   };
 
+  const sortedProperties = useMemo(() => {
+    const statusOrder: Record<Property["status"], number> = {
+      pending: 0,
+      approved: 1,
+      rejected: 2,
+      hidden: 3,
+    };
+
+    return [...properties].sort((a, b) => {
+      const orderA = statusOrder[a.status] ?? 99;
+      const orderB = statusOrder[b.status] ?? 99;
+      return orderA - orderB;
+    });
+  }, [properties]);
+
+  const propertyFilterTabs = PROPERTY_FILTER_TABS.map((tab) => {
+    // Sử dụng filterCounts cho tất cả các tab
+    return { ...tab, count: filterCounts[tab.key] || 0 };
+  });
+
   if (loading) {
     return <LoadingSpinner fullScreen text="Đang tải dữ liệu quản trị..." />;
   }
@@ -412,14 +507,10 @@ const AdminPage: React.FC = () => {
         {/* Navigation Tabs */}
         <div className="bg-white rounded-2xl shadow-soft mb-8">
           <div className="flex border-b border-gray-200">
-            {[
-              { key: "dashboard", label: "Tổng quan", icon: HiChartBar },
-              { key: "properties", label: "Quản lý tin đăng", icon: HiHome },
-              { key: "users", label: "Quản lý người dùng", icon: HiUsers },
-            ].map((tab) => (
+            {NAVIGATION_TABS.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
                   activeTab === tab.key
                     ? "text-(--color-primary) border-b-2 border-(--color-primary)"
@@ -739,34 +830,11 @@ const AdminPage: React.FC = () => {
             {/* Status Tabs */}
             <div className="bg-white rounded-2xl p-2 shadow-soft">
               <div className="flex gap-2">
-                {[
-                  {
-                    key: "all",
-                    label: "Tất cả",
-                    count: stats?.totalProperties || 0,
-                  },
-                  {
-                    key: "pending",
-                    label: "Chờ duyệt",
-                    count: stats?.pendingProperties || 0,
-                  },
-                  {
-                    key: "approved",
-                    label: "Đã duyệt",
-                    count:
-                      (stats?.totalProperties || 0) -
-                      (stats?.pendingProperties || 0),
-                  },
-                  {
-                    key: "rejected",
-                    label: "Từ chối",
-                    count: 0, // Backend needs to add this to stats
-                  },
-                ].map((tab) => (
+                {propertyFilterTabs.map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => {
-                      setFilter(tab.key as any);
+                      setFilter(tab.key);
                       setPropertyPage(1); // Reset to page 1 when filter changes
                     }}
                     className={`px-4 py-2 rounded-xl font-medium transition-colors ${
@@ -783,63 +851,57 @@ const AdminPage: React.FC = () => {
 
             {/* Search Controls */}
             <div className="bg-white rounded-2xl p-4 shadow-soft">
-              <div className="flex items-center gap-2 flex-wrap">
+              <form
+                onSubmit={handlePropertySearchSubmit}
+                className="flex items-center gap-2 flex-wrap"
+              >
                 <input
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  value={searchKeywordInput}
+                  onChange={(e) => setSearchKeywordInput(e.target.value)}
                   placeholder="Tìm theo tên/địa điểm"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-48"
                 />
                 <input
-                  value={minPrice}
+                  value={minPriceInput}
                   onChange={(e) =>
-                    setMinPrice(e.target.value.replace(/[^0-9]/g, ""))
+                    setMinPriceInput(e.target.value.replace(/[^0-9]/g, ""))
                   }
                   placeholder="Giá từ"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-28"
                 />
                 <input
-                  value={maxPrice}
+                  value={maxPriceInput}
                   onChange={(e) =>
-                    setMaxPrice(e.target.value.replace(/[^0-9]/g, ""))
+                    setMaxPriceInput(e.target.value.replace(/[^0-9]/g, ""))
                   }
                   placeholder="Giá đến"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-28"
                 />
                 <input
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
+                  value={userEmailInput}
+                  onChange={(e) => setUserEmailInput(e.target.value)}
                   placeholder="Người đăng (email)"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-56"
                 />
                 <button
-                  onClick={() => {
-                    setPropertyPage(1);
-                    fetchProperties();
-                  }}
+                  type="submit"
                   className="h-10 px-4 rounded-lg bg-(--color-primary) text-white font-medium hover:opacity-90"
                 >
                   Tìm kiếm
                 </button>
                 <button
-                  onClick={() => {
-                    setSearchKeyword("");
-                    setMinPrice("");
-                    setMaxPrice("");
-                    setUserEmail("");
-                    setPropertyPage(1);
-                    fetchProperties();
-                  }}
+                  type="button"
+                  onClick={handlePropertySearchReset}
                   className="h-10 px-3 rounded-lg bg-gray-100 text-[#083344] font-medium hover:bg-gray-200"
                 >
                   Xóa
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Properties List */}
             <div className="space-y-4">
-              {properties.map((property) => (
+              {sortedProperties.map((property) => (
                 <div
                   key={property._id}
                   className="bg-white rounded-2xl shadow-soft overflow-hidden"
@@ -1038,47 +1100,42 @@ const AdminPage: React.FC = () => {
           <div className="space-y-6">
             {/* Search Controls */}
             <div className="bg-white rounded-2xl p-4 shadow-soft">
-              <div className="flex items-center gap-2 flex-wrap">
+              <form
+                onSubmit={handleUserSearchSubmit}
+                className="flex items-center gap-2 flex-wrap"
+              >
                 <input
-                  value={userSearchKeyword}
-                  onChange={(e) => setUserSearchKeyword(e.target.value)}
+                  value={userSearchKeywordInput}
+                  onChange={(e) => setUserSearchKeywordInput(e.target.value)}
                   placeholder="Tìm theo tên"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-48"
                 />
                 <input
-                  value={userSearchEmail}
-                  onChange={(e) => setUserSearchEmail(e.target.value)}
+                  value={userSearchEmailInput}
+                  onChange={(e) => setUserSearchEmailInput(e.target.value)}
                   placeholder="Tìm theo email"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-56"
                 />
                 <input
-                  value={userSearchPhone}
-                  onChange={(e) => setUserSearchPhone(e.target.value)}
+                  value={userSearchPhoneInput}
+                  onChange={(e) => setUserSearchPhoneInput(e.target.value)}
                   placeholder="Tìm theo số điện thoại"
                   className="h-10 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-(--color-primary) focus:outline-none w-56"
                 />
                 <button
-                  onClick={() => {
-                    setUserPage(1);
-                    fetchUsers();
-                  }}
+                  type="submit"
                   className="h-10 px-4 rounded-lg bg-(--color-primary) text-white font-medium hover:opacity-90"
                 >
                   Tìm kiếm
                 </button>
                 <button
-                  onClick={() => {
-                    setUserSearchKeyword("");
-                    setUserSearchEmail("");
-                    setUserSearchPhone("");
-                    setUserPage(1);
-                    fetchUsers();
-                  }}
+                  type="button"
+                  onClick={handleUserSearchReset}
                   className="h-10 px-3 rounded-lg bg-gray-100 text-[#083344] font-medium hover:bg-gray-200"
                 >
                   Xóa
                 </button>
-              </div>
+              </form>
             </div>
 
             <div className="bg-white rounded-2xl shadow-soft overflow-hidden">

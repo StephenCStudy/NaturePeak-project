@@ -39,12 +39,19 @@ export const PropertyController = {
       // Build filter query
       const filter: any = {};
 
-      // If the requester is admin allow using waitingStatus query param (or all).
-      // Otherwise, restrict public views to reviewed + active posts only.
-      if (req.user?.role === "admin") {
+      // Check if user wants to see their own posts (bypass filters)
+      const isOwnerView = req.query.owner === "me" && req.user?.id;
+
+      // Apply waitingStatus and status filters based on user role and context
+      if (isOwnerView) {
+        // User viewing their own posts - NO waitingStatus/status filter
+        // Will filter by userId below
+      } else if (req.user?.role === "admin") {
+        // Admin can specify waitingStatus filter
         if (waitingStatus && waitingStatus !== "all") {
           filter.waitingStatus = waitingStatus;
         }
+        // If no waitingStatus specified or "all", don't add any waitingStatus filter
       } else {
         // Public/default behaviour: only show reviewed and active properties
         filter.waitingStatus = "reviewed";
@@ -87,8 +94,11 @@ export const PropertyController = {
         else filter.agent = null; // để kết quả rỗng nếu email không tồn tại
       }
 
-      // Filter theo người đăng (user) qua email hoặc tên nếu có
-      if (userEmail || userName) {
+      // If owner=me, filter by current user's id (takes priority)
+      if (isOwnerView && req.user?.id) {
+        filter.userId = req.user.id;
+      } else if (userEmail || userName) {
+        // Filter theo người đăng (user) qua email hoặc tên nếu có
         const uQuery: any = {};
         if (userEmail) {
           uQuery.email = {

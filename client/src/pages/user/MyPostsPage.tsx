@@ -35,13 +35,11 @@ const MyPostsPage: React.FC = () => {
   const fetchMyPosts = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/properties?page=1&limit=1000");
-      const allProperties = response.data.properties || [];
+      // Sử dụng owner=me để lấy TẤT CẢ tin của user (bao gồm waiting, reviewed, block)
+      const response = await api.get("/properties?page=1&limit=1000&owner=me");
+      const userProperties = response.data.properties || [];
 
-      // Filter properties của user hiện tại
-      const userProperties = allProperties.filter(
-        (prop: any) => prop.userId?._id === user?.id || prop.userId === user?.id
-      );
+      console.log("User properties:", userProperties.length);
 
       setPosts(userProperties);
     } catch (error) {
@@ -54,10 +52,12 @@ const MyPostsPage: React.FC = () => {
 
   const filteredPosts = posts.filter((post) => {
     if (filter === "all") return true;
-    if (filter === "active") return post.status === "active";
+    if (filter === "active")
+      return post.status === "active" && post.waitingStatus === "reviewed";
     if (filter === "hidden") return post.status === "hidden";
     if (filter === "waiting") return post.waitingStatus === "waiting";
-    if (filter === "reviewed") return post.waitingStatus === "reviewed";
+    if (filter === "reviewed")
+      return post.waitingStatus === "reviewed" && post.status === "active";
     return false;
   });
 
@@ -103,8 +103,19 @@ const MyPostsPage: React.FC = () => {
 
   const handleToggleVisibility = async (
     postId: string,
-    currentStatus: string
+    currentStatus: string,
+    waitingStatus?: string
   ) => {
+    // Không cho phép ẩn/hiện khi đang chờ duyệt hoặc bị chặn
+    if (waitingStatus === "waiting") {
+      toast.warning("Không thể ẩn/hiện tin đang chờ duyệt");
+      return;
+    }
+    if (waitingStatus === "block") {
+      toast.warning("Không thể ẩn/hiện tin đã bị chặn");
+      return;
+    }
+
     try {
       const newStatus = currentStatus === "hidden" ? "active" : "hidden";
 
@@ -357,18 +368,35 @@ const MyPostsPage: React.FC = () => {
 
                     <button
                       onClick={() =>
-                        handleToggleVisibility(post._id, post.status)
+                        handleToggleVisibility(
+                          post._id,
+                          post.status,
+                          post.waitingStatus
+                        )
                       }
                       className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                         post.status === "hidden"
                           ? "bg-green-100 text-green-700 hover:bg-green-500 hover:text-white"
                           : "bg-yellow-100 text-yellow-700 hover:bg-yellow-500 hover:text-white"
                       } ${
-                        post.waitingStatus === "waiting"
+                        post.waitingStatus === "waiting" ||
+                        post.waitingStatus === "block"
                           ? "opacity-50 cursor-not-allowed"
                           : ""
                       }`}
-                      disabled={post.waitingStatus === "waiting"}
+                      disabled={
+                        post.waitingStatus === "waiting" ||
+                        post.waitingStatus === "block"
+                      }
+                      title={
+                        post.waitingStatus === "waiting"
+                          ? "Không thể ẩn/hiện tin đang chờ duyệt"
+                          : post.waitingStatus === "block"
+                          ? "Không thể ẩn/hiện tin đã bị chặn"
+                          : post.status === "hidden"
+                          ? "Hiện tin đăng"
+                          : "Ẩn tin đăng"
+                      }
                     >
                       {post.status === "hidden" ? (
                         <>

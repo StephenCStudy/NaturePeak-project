@@ -33,11 +33,16 @@ export const authenticate = (
   next: NextFunction
 ) => {
   const authHeader =
-    req.headers.authorization || (req.headers.Authorization as string | undefined);
-  const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+    req.headers.authorization ||
+    (req.headers.Authorization as string | undefined);
+  const token =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : undefined;
   if (!token) return res.status(401).json({ message: "No token provided" });
 
-  if (tokenBlacklist.has(token)) return res.status(401).json({ message: "Token revoked" });
+  if (tokenBlacklist.has(token))
+    return res.status(401).json({ message: "Token revoked" });
 
   try {
     const payload = jwt.verify(token, JWT_SECRET) as any;
@@ -48,12 +53,50 @@ export const authenticate = (
   }
 };
 
+// Optional authentication - adds user info if token present, but doesn't reject if missing
+export const optionalAuth = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader =
+    req.headers.authorization ||
+    (req.headers.Authorization as string | undefined);
+  const token =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : undefined;
+
+  if (!token) {
+    // No token, continue as guest
+    next();
+    return;
+  }
+
+  if (tokenBlacklist.has(token)) {
+    // Token revoked, continue as guest
+    next();
+    return;
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as any;
+    req.user = { id: payload.id || payload._id, role: payload.role };
+    next();
+  } catch (err) {
+    // Invalid token, continue as guest
+    next();
+  }
+};
+
 export const requireRole = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ message: "Not authenticated" });
-    if (!roles.includes(req.user.role || "")) return res.status(403).json({ message: "Forbidden" });
+    if (!req.user)
+      return res.status(401).json({ message: "Not authenticated" });
+    if (!roles.includes(req.user.role || ""))
+      return res.status(403).json({ message: "Forbidden" });
     next();
   };
 };
 
-export default { authenticate, requireRole, revokeToken };
+export default { authenticate, optionalAuth, requireRole, revokeToken };

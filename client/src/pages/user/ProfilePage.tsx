@@ -59,13 +59,17 @@ const ProfilePage: React.FC = () => {
   const loadMyPosts = async () => {
     setPostsLoading(true);
     try {
-      const response = await api.get("/properties?page=1&limit=1000");
+      // Sử dụng owner=me để lấy tất cả tin của user (kể cả chờ duyệt, bị chặn)
+      const response = await api.get("/properties?page=1&limit=1000&owner=me");
       const allProperties = response.data.properties || [];
-      // Filter properties của user hiện tại
-      const userProperties = allProperties.filter(
-        (prop: any) => prop.userId?._id === user?.id || prop.userId === user?.id
+
+      // Chỉ lấy tin đã được duyệt và đang active để hiển thị ở profile
+      const approvedPosts = allProperties.filter(
+        (prop: any) =>
+          prop.waitingStatus === "reviewed" && prop.status === "active"
       );
-      setMyPosts(userProperties.slice(0, 3)); // Lấy tối đa 3 tin
+
+      setMyPosts(approvedPosts.slice(0, 1)); // Chỉ lấy 1 tin để hiện trên profile
     } catch (error) {
       console.error("Failed to load posts:", error);
       setMyPosts([]);
