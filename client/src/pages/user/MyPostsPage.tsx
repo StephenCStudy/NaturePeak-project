@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
-import type { RootState } from "../../store";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { HiPencil, HiTrash, HiEye, HiEyeOff, HiPlus } from "react-icons/hi";
 import { toast } from "react-toastify";
@@ -23,7 +21,6 @@ interface Post {
 }
 
 const MyPostsPage: React.FC = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
