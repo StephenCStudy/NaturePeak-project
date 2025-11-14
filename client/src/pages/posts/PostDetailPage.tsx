@@ -397,23 +397,27 @@ const PostDetailPage: React.FC = () => {
                   <div className="text-sm text-muted">Diện tích (m²)</div>
                 </div>
 
-                {property.bedrooms && (
-                  <div className="text-center">
-                    <div className="font-bold text-lg text-[#083344]">
-                      {property.bedrooms}
+                {property.model === "flat" &&
+                  property.bedrooms &&
+                  property.bedrooms > 0 && (
+                    <div className="text-center">
+                      <div className="font-bold text-lg text-[#083344]">
+                        {property.bedrooms}
+                      </div>
+                      <div className="text-sm text-muted">Phòng ngủ</div>
                     </div>
-                    <div className="text-sm text-muted">Phòng ngủ</div>
-                  </div>
-                )}
+                  )}
 
-                {property.bathrooms && (
-                  <div className="text-center">
-                    <div className="font-bold text-lg text-[#083344]">
-                      {property.bathrooms}
+                {property.model === "flat" &&
+                  property.bathrooms &&
+                  property.bathrooms > 0 && (
+                    <div className="text-center">
+                      <div className="font-bold text-lg text-[#083344]">
+                        {property.bathrooms}
+                      </div>
+                      <div className="text-sm text-muted">Phòng tắm</div>
                     </div>
-                    <div className="text-sm text-muted">Phòng tắm</div>
-                  </div>
-                )}
+                  )}
 
                 <div className="text-center">
                   <div className="font-bold text-lg text-[#083344]">

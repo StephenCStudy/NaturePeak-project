@@ -742,16 +742,17 @@ const ListingPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {(property.bedrooms || property.bathrooms) && (
-                        <div className="flex items-center gap-4 mb-4 text-sm text-muted">
-                          {property.bedrooms && (
-                            <span>{property.bedrooms} phòng ngủ</span>
-                          )}
-                          {property.bathrooms && (
-                            <span>{property.bathrooms} phòng tắm</span>
-                          )}
-                        </div>
-                      )}
+                      {property.propertyType !== "land" &&
+                        (property.bedrooms || property.bathrooms) && (
+                          <div className="flex items-center gap-4 mb-4 text-sm text-muted">
+                            {property.bedrooms && property.bedrooms > 0 && (
+                              <span>{property.bedrooms} phòng ngủ</span>
+                            )}
+                            {property.bathrooms && property.bathrooms > 0 && (
+                              <span>{property.bathrooms} phòng tắm</span>
+                            )}
+                          </div>
+                        )}
                     </Link>
 
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
