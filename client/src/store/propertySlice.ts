@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import api from "../services/api";
 
 // Định nghĩa kiểu dữ liệu cho Property theo đúng model
 export type Property = {
@@ -55,7 +55,7 @@ export const fetchProperties = createAsyncThunk(
   "property/fetchProperties",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("/api/properties", {
+      const response = await api.get("/properties", {
         params: {
           page: 1,
           limit: 1000, // Lấy tất cả properties cho homepage
@@ -86,7 +86,7 @@ export const fetchPropertyById = createAsyncThunk(
   "property/fetchPropertyById",
   async (id: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/properties/${id}`);
+      const response = await api.get(`/properties/${id}`);
       return response.data as Property;
     } catch (error: any) {
       console.error("fetchPropertyById error:", error);
@@ -104,7 +104,7 @@ export const createProperty = createAsyncThunk(
   "property/createProperty",
   async (propertyData: Partial<Property>, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/properties", propertyData, {
+      const response = await api.post("/properties", propertyData, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -129,7 +129,7 @@ export const updateProperty = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await axios.put(`/api/properties/${id}`, data, {
+      const response = await api.put(`/properties/${id}`, data, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -151,7 +151,7 @@ export const deleteProperty = createAsyncThunk(
   "property/deleteProperty",
   async (id: string, { rejectWithValue }) => {
     try {
-      await axios.delete(`/api/properties/${id}`);
+      await api.delete(`/properties/${id}`);
       return id;
     } catch (error: any) {
       console.error("deleteProperty error:", error);
@@ -172,7 +172,7 @@ export const patchPropertyStatus = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await axios.patch(`/api/properties/${id}/status`, {
+      const response = await api.patch(`/properties/${id}/status`, {
         status,
       });
       return response.data as Property;

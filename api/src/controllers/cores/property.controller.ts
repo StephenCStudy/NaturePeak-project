@@ -42,20 +42,38 @@ export const PropertyController = {
       // Check if user wants to see their own posts (bypass filters)
       const isOwnerView = req.query.owner === "me" && req.user?.id;
 
+      console.log("=== PROPERTY FILTER DEBUG ===");
+      console.log("Request path:", req.path);
+      console.log(
+        "User:",
+        req.user ? { id: req.user.id, role: req.user.role } : "No user"
+      );
+      console.log("Query owner:", req.query.owner);
+      console.log("isOwnerView:", isOwnerView);
+      console.log("waitingStatus param:", waitingStatus);
+
       // Apply waitingStatus and status filters based on user role and context
       if (isOwnerView) {
         // User viewing their own posts - NO waitingStatus/status filter
         // Will filter by userId below
+        console.log("Applied filter: Owner view (no status filter)");
       } else if (req.user?.role === "admin") {
         // Admin can specify waitingStatus filter
         if (waitingStatus && waitingStatus !== "all") {
           filter.waitingStatus = waitingStatus;
+          console.log(
+            "Applied filter: Admin with waitingStatus =",
+            waitingStatus
+          );
+        } else {
+          console.log("Applied filter: Admin (no waitingStatus filter)");
         }
         // If no waitingStatus specified or "all", don't add any waitingStatus filter
       } else {
         // Public/default behaviour: only show reviewed and active properties
         filter.waitingStatus = "reviewed";
         filter.status = "active";
+        console.log("Applied filter: Public (reviewed + active only)");
       }
 
       // Search in title or location
@@ -188,6 +206,10 @@ export const PropertyController = {
 
       // Get total count for pagination (with same filter)
       const total = await Property.countDocuments(filter);
+
+      console.log("Final filter:", JSON.stringify(filter, null, 2));
+      console.log("Total properties found:", total);
+      console.log("=== END DEBUG ===\n");
 
       // Get paginated properties
       const properties = await Property.find(filter)
