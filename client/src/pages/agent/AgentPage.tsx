@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import agentService from "../../services/agentService";
+import api from "../../services/api";
 import type {
   AgentDoc,
   AgentContact,
@@ -37,6 +38,7 @@ const AgentPage: React.FC = () => {
     totalPages: 0,
   });
   const [properties, setProperties] = useState<PropertyDoc[]>([]);
+  const [allProperties, setAllProperties] = useState<PropertyDoc[]>([]); // All properties for dropdown
   const [postsPage, setPostsPage] = useState(1);
   const [postsPagination, setPostsPagination] = useState({
     page: 1,
@@ -103,18 +105,25 @@ const AgentPage: React.FC = () => {
       if (!agentEmail) return;
       setLoading(true);
       try {
-        const [contactsRes, propsRes, sentRes, inboxRes] = await Promise.all([
-          agentService.getContactsByAgentEmail(agentEmail, contactsPage, 4),
-          agentService.getProperties({
-            agentId,
-            page: postsPage,
-            limit: 6,
-            search: postSearchTitle || undefined,
-            contactName: postSearchContact || undefined,
-          }),
-          agentService.getSentMessages(agentEmail, sentPage, 3),
-          agentService.getAgentReceivedMessages(agentEmail, inboxPage, 3),
-        ]);
+        const [contactsRes, propsRes, allPropsRes, sentRes, inboxRes] =
+          await Promise.all([
+            agentService.getContactsByAgentEmail(agentEmail, contactsPage, 4),
+            agentService.getProperties({
+              agentId,
+              page: postsPage,
+              limit: 6,
+              search: postSearchTitle || undefined,
+              contactName: postSearchContact || undefined,
+            }),
+            // Fetch ALL properties for dropdown (no pagination)
+            agentService.getProperties({
+              agentId,
+              page: 1,
+              limit: 1000, // Get all properties
+            }),
+            agentService.getSentMessages(agentEmail, sentPage, 3),
+            agentService.getAgentReceivedMessages(agentEmail, inboxPage, 3),
+          ]);
         setContacts(contactsRes.contacts);
         setContactsPagination(contactsRes.pagination);
         setProperties(propsRes.properties);
@@ -126,6 +135,7 @@ const AgentPage: React.FC = () => {
             totalPages: 1,
           }
         );
+        setAllProperties(allPropsRes.properties); // Store all properties for dropdown
         setSent(sentRes.messages);
         setSentPagination(
           sentRes.pagination || {
@@ -137,8 +147,8 @@ const AgentPage: React.FC = () => {
         );
         setInbox(inboxRes.messages);
         setInboxPagination(inboxRes.pagination);
-        if (propsRes.properties.length > 0) {
-          const firstPropId = propsRes.properties[0]._id;
+        if (allPropsRes.properties.length > 0) {
+          const firstPropId = allPropsRes.properties[0]._id;
           setComposePropertyId(firstPropId);
           // Fetch contacts for first property
           fetchPropertyContacts(firstPropId);
@@ -164,17 +174,35 @@ const AgentPage: React.FC = () => {
   const fetchPropertyContacts = async (propertyId: string) => {
     if (!propertyId) {
       setPropertyContactEmails([]);
+      setComposeRecipientEmail("");
       return;
     }
     try {
-      // Get all messages for this property from contacts
+      const emails: string[] = [];
+
+      // Get property details directly by ID to ensure userId is populated
+      try {
+        const propResponse = await api.get(`/properties/${propertyId}`);
+        const propDetails = propResponse.data;
+
+        // Check if property has userId with email
+        const userIdObj = propDetails?.userId;
+        if (userIdObj && typeof userIdObj === "object" && userIdObj.email) {
+          emails.push(userIdObj.email);
+        }
+      } catch (err) {
+        console.warn("Could not fetch property details:", err);
+      }
+
+      // Also get all messages for this property to find other contacts
       const allMessages = await agentService.getAgentReceivedMessages(
         agentEmail,
         1,
         1000 // Get all to filter by property
       );
+
       // Filter messages for this specific property and extract unique sender emails
-      const emails = allMessages.messages
+      const senderEmails = allMessages.messages
         .filter((m) => {
           // Handle both string and object propertyId
           const msgPropertyId =
@@ -184,15 +212,21 @@ const AgentPage: React.FC = () => {
         .map((m) => m.senderEmail!)
         .filter((email, index, self) => self.indexOf(email) === index); // unique
 
-      console.log("Property ID:", propertyId);
-      console.log("Found emails:", emails);
+      // Merge emails (userId email first, then senders)
+      const allEmails = [...new Set([...emails, ...senderEmails])];
 
-      setPropertyContactEmails(emails);
+      console.log("Property ID:", propertyId);
+      console.log("Owner email:", emails[0] || "none");
+      console.log("Sender emails:", senderEmails);
+      console.log("All emails:", allEmails);
+
+      setPropertyContactEmails(allEmails);
       // Auto-fill recipient email with comma-separated list
-      setComposeRecipientEmail(emails.join(", "));
+      setComposeRecipientEmail(allEmails.join(", "));
     } catch (err) {
       console.error("Error fetching property contacts:", err);
       setPropertyContactEmails([]);
+      setComposeRecipientEmail("");
     }
   };
 
@@ -502,9 +536,13 @@ const AgentPage: React.FC = () => {
 
             {notifTab === "inbox" ? (
               <div>
-                {inbox.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Đang tải...
+                  </div>
+                ) : inbox.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 bg-[#F9FBE7] rounded-lg">
-                    Chưa có tin nhắn.
+                    Chưa có tin nhắn được nhận.
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -518,12 +556,16 @@ const AgentPage: React.FC = () => {
                           {new Date(m.createdAt).toLocaleString("vi-VN")}
                         </div>
                         <div className="font-semibold text-[#2E7D32] mb-2">
-                          {m.propertyId?.title}
+                          Bài đăng:{" "}
+                          {typeof m.propertyId === "object" &&
+                          m.propertyId?.title
+                            ? m.propertyId.title
+                            : "Không xác định"}
                         </div>
                         <div className="text-sm text-gray-600 mb-1">
                           <span className="font-medium">Người gửi:</span>{" "}
-                          {m.senderName}{" "}
-                          {m.senderEmail ? `(${m.senderEmail})` : ""}
+                          {m.senderName || "Ẩn danh"}
+                          {m.senderEmail ? ` (${m.senderEmail})` : ""}
                         </div>
                         <div className="mt-3 p-3 bg-white rounded border-l-4 border-[#2E7D32] text-gray-700">
                           {m.message}
@@ -575,10 +617,10 @@ const AgentPage: React.FC = () => {
                       }}
                       required
                     >
-                      {properties.length === 0 ? (
+                      {allProperties.length === 0 ? (
                         <option value="">Không có bài đăng</option>
                       ) : (
-                        properties.map((p) => (
+                        allProperties.map((p) => (
                           <option key={p._id} value={p._id}>
                             {p.title}
                           </option>

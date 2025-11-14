@@ -373,7 +373,7 @@ export const MessageController = {
     }
   },
 
-  // Liên hệ của đại lý: tập hợp người gửi tin nhắn tới các bài đăng thuộc đại lý
+  // Liên hệ của đại lý: tập hợp người gửi tin nhắn + userId (chủ property) thuộc đại lý
   getAgentContacts: async (req: Request, res: Response) => {
     try {
       const {
@@ -390,7 +390,9 @@ export const MessageController = {
       const agent = await Agent.findOne({ email });
       if (!agent) return res.status(404).json({ message: "Agent not found" });
 
-      const props = await Property.find({ agent: agent._id }).select("_id");
+      const props = await Property.find({ agent: agent._id })
+        .select("_id userId")
+        .populate("userId", "name email phone");
       const propIds = props.map((p) => p._id);
       if (propIds.length === 0)
         return res.json({
@@ -402,8 +404,8 @@ export const MessageController = {
       const limitNum = parseInt(limit!, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      // Lấy các sender unique theo property của đại lý
-      const rows = await Message.aggregate([
+      // Lấy các sender unique từ messages
+      const senderRows = await Message.aggregate([
         { $match: { propertyId: { $in: propIds } } },
         {
           $group: {
@@ -415,24 +417,60 @@ export const MessageController = {
             lastMessageAt: { $max: "$createdAt" },
           },
         },
-        { $sort: { lastMessageAt: -1 } },
-        {
-          $facet: {
-            data: [{ $skip: skip }, { $limit: limitNum }],
-            total: [{ $count: "count" }],
-          },
-        },
       ]);
 
-      const data = rows[0]?.data || [];
-      const total = rows[0]?.total[0]?.count || 0;
+      // Lấy danh sách userId unique từ properties (chủ property)
+      const userIds = new Map<string, any>();
+      for (const p of props) {
+        if (p.userId && typeof p.userId === "object") {
+          const u = p.userId as any;
+          if (u._id && u.email) {
+            const key = u.email;
+            if (!userIds.has(key)) {
+              userIds.set(key, {
+                name: u.name || "Chủ property",
+                email: u.email,
+                phone: u.phone || "",
+                lastMessageAt: null, // Có thể cập nhật sau nếu cần
+              });
+            }
+          }
+        }
+      }
 
-      const contacts = data.map((r: any) => ({
-        name: r._id.name,
-        email: r._id.email,
-        phone: r._id.phone,
-        lastMessageAt: r.lastMessageAt,
-      }));
+      // Merge senders và userIds
+      const contactsMap = new Map<string, any>();
+
+      // Add senders
+      for (const r of senderRows) {
+        const email = r._id.email || "";
+        if (email && !contactsMap.has(email)) {
+          contactsMap.set(email, {
+            name: r._id.name,
+            email: r._id.email,
+            phone: r._id.phone,
+            lastMessageAt: r.lastMessageAt,
+          });
+        }
+      }
+
+      // Add property owners
+      for (const [key, value] of userIds) {
+        if (!contactsMap.has(key)) {
+          contactsMap.set(key, value);
+        }
+      }
+
+      // Convert to array and sort
+      const allContacts = Array.from(contactsMap.values()).sort((a, b) => {
+        const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+        const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      // Paginate
+      const total = allContacts.length;
+      const contacts = allContacts.slice(skip, skip + limitNum);
 
       res.json({
         contacts,
