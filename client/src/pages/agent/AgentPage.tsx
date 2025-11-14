@@ -260,10 +260,6 @@ const AgentPage: React.FC = () => {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!window.confirm("Bạn có chắc muốn xóa tin nhắn này?")) {
-      return;
-    }
-
     try {
       // Sử dụng endpoint riêng cho agent
       await api.delete(`/messages/agent/${messageId}`, {

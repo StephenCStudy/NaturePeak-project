@@ -23,6 +23,7 @@ import AddPostPage from "./pages/posts/AddPostPage";
 import AdminPage from "./pages/admin/AdminPage";
 import AgentPage from "./pages/agent/AgentPage";
 import AgentLoginPage from "./pages/agent/AgentLoginPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCurrentUser } from "./store/authSlice";
 import type { AppDispatch, RootState } from "./store";
@@ -114,6 +115,9 @@ const App: React.FC = () => {
             />
             <Route path="/agent/login" element={<AgentLoginPage />} />
             <Route path="/agent" element={<AgentPage />} />
+
+            {/* 404 Not Found - Must be last */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
 
