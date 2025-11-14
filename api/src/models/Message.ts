@@ -14,7 +14,10 @@ const messageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-  }, // chủ property
+  }, // chủ property hoặc người nhận
+  recipientName: { type: String }, // Tên người nhận (agent/contact)
+  recipientPhone: { type: String }, // SĐT người nhận
+  recipientEmail: { type: String }, // Email người nhận
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });

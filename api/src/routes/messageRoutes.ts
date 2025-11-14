@@ -15,5 +15,6 @@ router.post("/from-agent", MessageController.sendMessageFromAgent);
 router.get("/sent-by-agent", MessageController.getMessagesSentByAgent);
 router.get("/agent-contacts", MessageController.getAgentContacts);
 router.get("/for-agent", MessageController.getMessagesForAgent);
+router.delete("/agent/:id", MessageController.deleteMessageByAgent);
 
 export default router;

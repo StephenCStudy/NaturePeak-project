@@ -412,9 +412,12 @@ const ProfilePage: React.FC = () => {
                               </p>
                             </div>
 
-                            <p className="text-sm text-gray-700 mb-2 line-clamp-2">
-                              "{msg.message}"
-                            </p>
+                            {/* Message Content - Highlighted */}
+                            <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-r-lg p-3 mb-2">
+                              <p className="text-sm text-gray-800 leading-relaxed line-clamp-2">
+                                {msg.message}
+                              </p>
+                            </div>
 
                             <div className="flex items-center justify-between">
                               <p className="text-xs text-muted">

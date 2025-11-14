@@ -16,36 +16,60 @@ export const MessageController = {
           .json({ message: "Vui lòng đăng nhập để gửi tin nhắn" });
       }
 
-      const { propertyId, message } = req.body;
+      const { propertyId, message, recipient } = req.body;
 
       // Validate required fields
       if (!propertyId || !message) {
         return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
       }
 
-      // Tìm property để lấy userId (chủ property)
+      // Tìm property để lấy thông tin cơ bản
       const property = await Property.findById(propertyId);
       if (!property) {
         return res.status(404).json({ message: "Không tìm thấy bất động sản" });
-      }
-
-      if (!property.userId) {
-        return res
-          .status(400)
-          .json({ message: "Bất động sản không có chủ sở hữu" });
-      }
-
-      // Không cho phép gửi tin nhắn cho chính mình
-      if (property.userId.toString() === userId) {
-        return res
-          .status(400)
-          .json({ message: "Không thể gửi tin nhắn cho chính mình" });
       }
 
       // Lấy thông tin user đang đăng nhập
       const sender = await User.findById(userId);
       if (!sender) {
         return res.status(404).json({ message: "Không tìm thấy người dùng" });
+      }
+
+      // Xác định recipient từ request hoặc property
+      let recipientUserId = property.userId;
+      let recipientName = "";
+      let recipientPhone = "";
+      let recipientEmail = "";
+
+      if (recipient) {
+        // Nếu có recipient info từ frontend, sử dụng nó
+        recipientName = recipient.name;
+        recipientPhone = recipient.phone || "";
+        recipientEmail = recipient.email || "";
+
+        // Nếu là agent hoặc user, lấy userId
+        if (recipient.type === "agent" || recipient.type === "user") {
+          if (recipient.id) {
+            recipientUserId = recipient.id;
+          }
+        } else {
+          // Nếu là contact (không có userId), dùng property.userId làm recipient
+          recipientUserId = property.userId;
+        }
+      } else {
+        // Fallback: dùng property.userId
+        if (!property.userId) {
+          return res
+            .status(400)
+            .json({ message: "Bất động sản không có chủ sở hữu" });
+        }
+      }
+
+      // Kiểm tra không cho phép gửi tin nhắn cho chính mình (sau khi xác định recipient)
+      if (recipientUserId && recipientUserId.toString() === userId) {
+        return res
+          .status(400)
+          .json({ message: "Không thể gửi tin nhắn cho chính mình" });
       }
 
       // Tạo message mới với thông tin từ user đang đăng nhập
@@ -55,7 +79,10 @@ export const MessageController = {
         senderPhone: sender.phone,
         senderEmail: sender.email,
         message,
-        recipientUserId: property.userId,
+        recipientUserId,
+        recipientName: recipientName || undefined,
+        recipientPhone: recipientPhone || undefined,
+        recipientEmail: recipientEmail || undefined,
       });
 
       const populatedMessage = await Message.findById(newMessage._id)
@@ -161,6 +188,41 @@ export const MessageController = {
       // Check ownership
       if (message.recipientUserId.toString() !== userId) {
         return res.status(403).json({ message: "Forbidden" });
+      }
+
+      await message.deleteOne();
+      res.json({ message: "Đã xóa tin nhắn" });
+    } catch (err) {
+      res.status(500).json({ message: (err as any).message });
+    }
+  },
+
+  // Xóa tin nhắn cho agent (không cần auth token)
+  deleteMessageByAgent: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { agentEmail } = req.body;
+
+      if (!agentEmail) {
+        return res.status(400).json({ message: "Thiếu agentEmail" });
+      }
+
+      // Tìm agent
+      const agent = await Agent.findOne({ email: agentEmail });
+      if (!agent) {
+        return res.status(404).json({ message: "Không tìm thấy agent" });
+      }
+
+      const message = await Message.findById(id);
+      if (!message) {
+        return res.status(404).json({ message: "Không tìm thấy tin nhắn" });
+      }
+
+      // Kiểm tra agent có quyền xóa (phải là người nhận)
+      if (message.recipientUserId.toString() !== agent._id.toString()) {
+        return res
+          .status(403)
+          .json({ message: "Không có quyền xóa tin nhắn này" });
       }
 
       await message.deleteOne();

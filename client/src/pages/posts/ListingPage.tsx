@@ -32,7 +32,8 @@ interface Property {
     name: string;
     phone: string;
   };
-  status: "available" | "sold" | "rented";
+  status: "available" | "sold" | "rented" | "active" | "hidden";
+  waitingStatus?: "waiting" | "reviewed" | "block";
   featured?: boolean;
 }
 
@@ -181,8 +182,11 @@ const ListingPage: React.FC = () => {
           p.userId || { name: "Chưa cập nhật", phone: "Liên hệ" },
         status: p.status || "available",
         featured: p.featured || false,
+        waitingStatus: p.waitingStatus,
       }));
-      // Backend already sorted/paginated; set properties and pagination
+
+      // Backend đã filter (waitingStatus: "reviewed" + status: "active")
+      // Không cần filter client-side để tránh lỗi pagination
       setProperties(mappedProperties);
       const pagination = data.pagination || {};
       setTotalCount(pagination.total || mappedProperties.length);

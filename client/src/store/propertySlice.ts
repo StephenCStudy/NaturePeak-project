@@ -50,7 +50,11 @@ const initialState: PropertyState = {
   lastFetch: null,
 };
 
-// Async thunk để fetch tất cả properties
+// Async thunk để fetch tất cả properties cho HomePage
+// QUAN TRỌNG: Backend tự động filter chỉ trả về properties:
+// - waitingStatus = "reviewed" (đã được admin duyệt)
+// - status = "active" (không bị ẩn bởi user)
+// Frontend thêm filter client-side để đảm bảo an toàn
 export const fetchProperties = createAsyncThunk(
   "property/fetchProperties",
   async (_, { rejectWithValue }) => {
@@ -62,14 +66,23 @@ export const fetchProperties = createAsyncThunk(
         },
       });
 
-      // Backend trả về paginated response: { properties: [], pagination: {} }
+      // Backend already sorted/paginated; set properties and pagination
       const properties = response.data.properties || response.data;
 
       if (!Array.isArray(properties)) {
         throw new Error("Dữ liệu trả về không đúng định dạng");
       }
 
-      return properties as Property[];
+      // Client-side filter: Chỉ hiển thị properties đã duyệt và active
+      // Backend đã filter nhưng đây là extra layer để đảm bảo
+      // CHỈ hiển thị trên HomePage khi:
+      // 1. waitingStatus = "reviewed" (đã được admin phê duyệt)
+      // 2. status = "active" (không bị user ẩn)
+      const filteredProperties = properties.filter(
+        (p: Property) => p.waitingStatus === "reviewed" && p.status === "active"
+      );
+
+      return filteredProperties as Property[];
     } catch (error: any) {
       console.error("fetchProperties error:", error);
       const errorMessage =

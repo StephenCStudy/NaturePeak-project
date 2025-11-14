@@ -9,6 +9,7 @@ import {
   HiMail,
   HiPhone,
   HiSearch,
+  HiTrash,
 } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -255,6 +256,30 @@ const AgentPage: React.FC = () => {
       setSentPagination(sentRes.pagination || sentPagination);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Gửi thất bại");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!window.confirm("Bạn có chắc muốn xóa tin nhắn này?")) {
+      return;
+    }
+
+    try {
+      // Sử dụng endpoint riêng cho agent
+      await api.delete(`/messages/agent/${messageId}`, {
+        data: { agentEmail },
+      });
+      toast.success("Đã xóa tin nhắn");
+      // Reload inbox
+      const inboxRes = await agentService.getAgentReceivedMessages(
+        agentEmail,
+        inboxPage,
+        3
+      );
+      setInbox(inboxRes.messages);
+      setInboxPagination(inboxRes.pagination);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Xóa tin nhắn thất bại");
     }
   };
 
@@ -549,8 +574,15 @@ const AgentPage: React.FC = () => {
                     {inbox.map((m) => (
                       <div
                         key={m._id}
-                        className="p-5 border border-gray-200 rounded-lg bg-linear-to-br from-white to-[#F9FBE7] hover:shadow-md transition-shadow"
+                        className="p-5 border border-gray-200 rounded-lg bg-linear-to-br from-white to-[#F9FBE7] hover:shadow-md transition-shadow relative"
                       >
+                        <button
+                          onClick={() => handleDeleteMessage(m._id)}
+                          className="absolute top-4 right-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Xóa tin nhắn"
+                        >
+                          <HiTrash className="w-5 h-5" />
+                        </button>
                         <div className="text-xs text-gray-500 mb-3 flex items-center gap-2">
                           <span>🕐</span>
                           {new Date(m.createdAt).toLocaleString("vi-VN")}

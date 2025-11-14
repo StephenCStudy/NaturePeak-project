@@ -27,6 +27,11 @@ const HomePage: React.FC = () => {
   }, [error, dispatch]);
 
   // Fetch properties khi component mount với xử lý lỗi
+  // Properties được fetch từ Redux store (propertySlice)
+  // Backend + Frontend đã filter để CHỈ hiển thị:
+  // - Tin đã được admin duyệt (waitingStatus = "reviewed")
+  // - Tin đang hoạt động (status = "active")
+  // => Tin mới chưa duyệt, tin bị ẩn, tin bị từ chối KHÔNG hiển thị
   useEffect(() => {
     const loadProperties = async () => {
       try {

@@ -42,38 +42,28 @@ export const PropertyController = {
       // Check if user wants to see their own posts (bypass filters)
       const isOwnerView = req.query.owner === "me" && req.user?.id;
 
-      console.log("=== PROPERTY FILTER DEBUG ===");
-      console.log("Request path:", req.path);
-      console.log(
-        "User:",
-        req.user ? { id: req.user.id, role: req.user.role } : "No user"
-      );
-      console.log("Query owner:", req.query.owner);
-      console.log("isOwnerView:", isOwnerView);
-      console.log("waitingStatus param:", waitingStatus);
-
       // Apply waitingStatus and status filters based on user role and context
+      // LOGIC QUAN TRỌNG: Kiểm soát hiển thị properties
+      // 1. Owner view (owner=me): User xem tin của mình - KHÔNG filter status
+      // 2. Admin với waitingStatus param: Có thể filter theo waitingStatus (trong AdminPage)
+      // 3. Public (default) - BẢO GỒM ADMIN không có waitingStatus param: CHỈ hiển thị reviewed + active
+      //    - waiting: Chờ duyệt - KHÔNG hiển thị
+      //    - block: Bị từ chối - KHÔNG hiển thị
+      //    - hidden: Bị ẩn - KHÔNG hiển thị
       if (isOwnerView) {
         // User viewing their own posts - NO waitingStatus/status filter
         // Will filter by userId below
-        console.log("Applied filter: Owner view (no status filter)");
-      } else if (req.user?.role === "admin") {
-        // Admin can specify waitingStatus filter
-        if (waitingStatus && waitingStatus !== "all") {
+      } else if (req.user?.role === "admin" && waitingStatus) {
+        // Admin CÓ chỉ định waitingStatus (đang ở AdminPage)
+        if (waitingStatus !== "all") {
           filter.waitingStatus = waitingStatus;
-          console.log(
-            "Applied filter: Admin with waitingStatus =",
-            waitingStatus
-          );
-        } else {
-          console.log("Applied filter: Admin (no waitingStatus filter)");
         }
-        // If no waitingStatus specified or "all", don't add any waitingStatus filter
+        // If waitingStatus = "all", don't add any waitingStatus filter
       } else {
         // Public/default behaviour: only show reviewed and active properties
+        // Áp dụng cho: không đăng nhập, user thường, VÀ admin không có waitingStatus param
         filter.waitingStatus = "reviewed";
         filter.status = "active";
-        console.log("Applied filter: Public (reviewed + active only)");
       }
 
       // Search in title or location
@@ -207,10 +197,6 @@ export const PropertyController = {
       // Get total count for pagination (with same filter)
       const total = await Property.countDocuments(filter);
 
-      console.log("Final filter:", JSON.stringify(filter, null, 2));
-      console.log("Total properties found:", total);
-      console.log("=== END DEBUG ===\n");
-
       // Get paginated properties
       const properties = await Property.find(filter)
         .populate("agent")
@@ -277,7 +263,16 @@ export const PropertyController = {
       if (req.user?.role !== "admin" && !isOwner)
         return res.status(403).json({ message: "Forbidden" });
 
-      Object.assign(property, req.body);
+      // Handle null fields (for clearing agent or contact fields when switching)
+      const updateData = { ...req.body };
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key] === null) {
+          property.set(key, undefined);
+          delete updateData[key];
+        }
+      });
+
+      Object.assign(property, updateData);
       await property.save();
       res.json(property);
     } catch (err) {

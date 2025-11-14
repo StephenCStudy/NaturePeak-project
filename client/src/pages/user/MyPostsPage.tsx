@@ -359,7 +359,7 @@ const MyPostsPage: React.FC = () => {
                     </Link>
 
                     <Link
-                      to={`/edit-post/${post._id}`}
+                      to={`/add-post/${post._id}`}
                       className="flex-1 bg-blue-100 text-blue-700 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center gap-2"
                     >
                       <HiPencil className="w-4 h-4" />

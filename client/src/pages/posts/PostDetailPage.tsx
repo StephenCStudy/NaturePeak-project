@@ -463,6 +463,8 @@ const PostDetailPage: React.FC = () => {
                         phone: property.contactPhone,
                         email: property.contactEmail,
                         title: "Người liên hệ",
+                        type: "contact" as const,
+                        id: undefined,
                       }
                     : property.agent
                     ? {
@@ -470,13 +472,17 @@ const PostDetailPage: React.FC = () => {
                         phone: property.agent.phone,
                         email: property.agent.email,
                         title: property.agent.agency || "Chuyên viên tư vấn",
+                        type: "agent" as const,
+                        id: property.agent._id,
                       }
                     : property.userId && typeof property.userId === "object"
                     ? {
-                        name: property.userId.name,
-                        phone: property.userId.phone,
-                        email: property.userId.email,
+                        name: (property.userId as any).name,
+                        phone: (property.userId as any).phone,
+                        email: (property.userId as any).email,
                         title: "Chủ bất động sản",
+                        type: "user" as const,
+                        id: (property.userId as any)._id,
                       }
                     : null;
 

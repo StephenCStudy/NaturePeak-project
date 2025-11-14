@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 import { uploadToCloudinary } from "../../utils/cores/upload_image.cloudinary";
@@ -52,10 +52,13 @@ interface Agent {
 
 const AddPostPage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const { user } = useUser();
+  const isEditMode = !!id;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingProperty, setLoadingProperty] = useState(isEditMode);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
 
@@ -86,6 +89,48 @@ const AddPostPage: React.FC = () => {
     { number: 5, title: "Liên hệ", icon: HiDocumentText },
   ];
 
+  // Load property data if in edit mode
+  useEffect(() => {
+    if (isEditMode && id) {
+      const loadProperty = async () => {
+        try {
+          const response = await api.get(`/properties/${id}`);
+          const property = response.data;
+
+          // Determine contact type
+          const hasAgent = !!property.agent?._id;
+          const contactType = hasAgent ? "agent" : "personal";
+
+          setFormData({
+            model: property.model || "",
+            transactionType: property.transactionType || "",
+            title: property.title || "",
+            description: property.description || "",
+            price: property.price?.toString() || "",
+            area: property.area?.toString() || "",
+            amenities: property.amenities || [],
+            location: property.location || "",
+            bedrooms: property.bedrooms?.toString() || "",
+            bathrooms: property.bathrooms?.toString() || "",
+            images: property.images || [],
+            contactType: contactType,
+            agentId: property.agent?._id || "",
+            contactName: property.agent?.name || property.contactName || "",
+            contactPhone: property.agent?.phone || property.contactPhone || "",
+            contactEmail: property.agent?.email || property.contactEmail || "",
+          });
+        } catch (error) {
+          console.error("Failed to load property:", error);
+          toast.error("Không thể tải thông tin bài đăng");
+          navigate("/my-posts");
+        } finally {
+          setLoadingProperty(false);
+        }
+      };
+      loadProperty();
+    }
+  }, [isEditMode, id, navigate]);
+
   // Load agents and user info on mount
   useEffect(() => {
     const loadAgents = async () => {
@@ -98,8 +143,8 @@ const AddPostPage: React.FC = () => {
     };
     loadAgents();
 
-    // Auto-fill user info if personal contact type
-    if (user && formData.contactType === "personal") {
+    // Auto-fill user info if personal contact type (only for new post)
+    if (!isEditMode && user && formData.contactType === "personal") {
       setFormData((prev) => ({
         ...prev,
         contactName: user.name || "",
@@ -109,9 +154,9 @@ const AddPostPage: React.FC = () => {
     }
   }, []);
 
-  // Auto-fill user info when switching to personal
+  // Auto-fill user info when switching to personal (only for new post)
   useEffect(() => {
-    if (formData.contactType === "personal" && user) {
+    if (!isEditMode && formData.contactType === "personal" && user) {
       setFormData((prev) => ({
         ...prev,
         contactName: user.name || "",
@@ -350,22 +395,41 @@ const AddPostPage: React.FC = () => {
         bathrooms:
           formData.model === "flat" ? parseInt(formData.bathrooms) || 0 : 0,
         amenities: formData.amenities,
-        status: "active",
-        waitingStatus: "waiting", // Chờ admin duyệt
       };
+
+      // Only set status and waitingStatus for new posts
+      if (!isEditMode) {
+        propertyData.status = "active";
+        propertyData.waitingStatus = "waiting"; // Chờ admin duyệt
+      }
 
       // Add contact info based on type
       if (formData.contactType === "agent") {
         propertyData.agent = formData.agentId;
+        // Clear personal contact fields when using agent
+        if (isEditMode) {
+          propertyData.contactName = null;
+          propertyData.contactPhone = null;
+          propertyData.contactEmail = null;
+        }
       } else {
         propertyData.contactName = formData.contactName.trim();
         propertyData.contactPhone = formData.contactPhone.trim();
         propertyData.contactEmail = formData.contactEmail.trim() || undefined;
+        // Clear agent field when using personal contact
+        if (isEditMode) {
+          propertyData.agent = null;
+        }
       }
 
-      await api.post("/properties", propertyData);
+      if (isEditMode && id) {
+        await api.put(`/properties/${id}`, propertyData);
+        toast.success("Cập nhật tin thành công!");
+      } else {
+        await api.post("/properties", propertyData);
+        toast.success("Đăng tin thành công! Đang chờ admin phê duyệt.");
+      }
 
-      toast.success("Đăng tin thành công! Đang chờ admin phê duyệt.");
       setTimeout(() => {
         navigate("/my-posts");
       }, 1500);
@@ -379,15 +443,30 @@ const AddPostPage: React.FC = () => {
     }
   };
 
+  if (loadingProperty) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-(--color-primary) mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-b from-(--color-cream) to-white py-10">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-heading font-bold text-[#083344] mb-2">
-            Đăng tin bất động sản
+            {isEditMode ? "Chỉnh sửa tin đăng" : "Đăng tin bất động sản"}
           </h1>
-          <p className="text-muted">Hoàn thành từng bước để đăng tin của bạn</p>
+          <p className="text-muted">
+            {isEditMode
+              ? "Cập nhật thông tin bài đăng của bạn"
+              : "Hoàn thành từng bước để đăng tin của bạn"}
+          </p>
         </div>
 
         {/* Stepper */}

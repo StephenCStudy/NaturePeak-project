@@ -20,7 +20,6 @@ import EditProfilePage from "./pages/user/EditProfilePage";
 import ChangePasswordPage from "./pages/user/ChangePasswordPage";
 import MyPostsPage from "./pages/user/MyPostsPage";
 import AddPostPage from "./pages/posts/AddPostPage";
-import EditPostPage from "./pages/posts/EditPostPage";
 import AdminPage from "./pages/admin/AdminPage";
 import AgentPage from "./pages/agent/AgentPage";
 import AgentLoginPage from "./pages/agent/AgentLoginPage";
@@ -65,6 +64,14 @@ const App: React.FC = () => {
               }
             />
             <Route
+              path="/add-post/:id"
+              element={
+                <ProtectedRoute>
+                  <AddPostPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <ProtectedRoute>
@@ -96,14 +103,7 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/edit-post/:id"
-              element={
-                <ProtectedRoute>
-                  <EditPostPage />
-                </ProtectedRoute>
-              }
-            />
+
             <Route
               path="/admin"
               element={
